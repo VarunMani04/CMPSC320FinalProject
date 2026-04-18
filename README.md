@@ -1,20 +1,28 @@
 # Student Skill Gap Analyzer (CMPSC 320)
 
-Full-stack **Student Skill Gap Analyzer**: SvelteKit + Tailwind (frontend), Flask + Gunicorn (backend), Claude API for AI features, with optional PostgreSQL and Docker per the course requirements.
+Full-stack app: **SvelteKit + Tailwind** (frontend), **Flask + Gunicorn + SQLite** (backend), **OpenAI** optional for JD parsing, gap analysis, and roadmaps (heuristic fallbacks run without an API key to save credits).
 
-See [OUTLINE.md](./OUTLINE.md) for a development outline mapped to the requirements document (use cases, architecture, quality attributes, phased delivery).
+See [OUTLINE.md](./OUTLINE.md) for how this maps to the course requirements.
+
+## What’s implemented
+
+- **UC-01:** Register / log in (email + password), student profile + skills (SQLite).
+- **UC-02:** Paste one or many job descriptions (`---` separators); analyze and store parsed skills (LLM or heuristic).
+- **UC-03:** Gap report vs profile + saved postings (LLM or rule-based fallback).
+- **UC-04:** Roadmap with milestones; checkboxes PATCH completion.
+- **UI:** Neutral stone palette, simple “SG” mark, overview checklist on the dashboard.
 
 ## Repository layout
 
 | Path | Purpose |
 |------|---------|
-| `frontend/` | SvelteKit app; dev server proxies `/api` → Flask on port 5000 |
-| `backend/` | Flask app factory, REST API under `/api` |
-| `OUTLINE.md` | Feature and implementation phases |
+| `frontend/` | SvelteKit UI; `vite` dev proxies `/api` → Flask `:5000` |
+| `backend/` | Flask API, SQLAlchemy models, `app/services/llm.py` |
+| `OUTLINE.md` | Requirements-aligned outline |
 
 ## Prerequisites
 
-- Node.js 18+ (Node 20+ recommended if you use the `sv` CLI elsewhere)
+- Node.js 18+
 - Python 3.9+
 
 ## Backend
@@ -24,30 +32,39 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # add ANTHROPIC_API_KEY when calling Claude
-python wsgi.py              # http://127.0.0.1:5000 — try GET /api/health
+cp .env.example .env        # set SECRET_KEY; add OPENAI_API_KEY to enable LLM
+python wsgi.py              # http://127.0.0.1:5000 — GET /api/health
 pytest
 ```
 
-Production-style serve: `gunicorn -w 2 -b 0.0.0.0:5000 wsgi:app` (from `backend/` with `PYTHONPATH=.` or run after `pip install -e .` — for now `python wsgi.py` is enough for dev).
+Gunicorn (from `backend/`): `gunicorn -w 2 -b 127.0.0.1:5000 wsgi:app`
+
+SQLite file default: `backend/instance/app.db`.
 
 ## Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev                 # http://127.0.0.1:5173 — API calls to /api are proxied to Flask
+npm run dev                 # http://127.0.0.1:5173 — /api proxied to Flask
 ```
+
+Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session cookies match; the README defaults assume **127.0.0.1**.
 
 ## Environment
 
-- **Never commit** `.env` or API keys. Use `backend/.env.example` as a template.
-- If your global npm cache has permission errors, you can use a project-local cache, for example:  
-  `NPM_CONFIG_CACHE="$PWD/.npm-cache" npm install` (from `frontend/`).
+- **Never commit** `.env` or API keys.
+- **`OPENAI_MODEL`:** defaults to `gpt-4o-mini` (set in `.env` if you want another small/cheap model).
+- **Production / poster QR:** deploy frontend + backend, use HTTPS, set `SESSION_COOKIE_SECURE=true`, and add your public site origin to the `origins` list in `backend/app/__init__.py` for CORS + credentials.
 
-## Next implementation steps
+## Poster / hosting (next step for you)
 
-1. Authentication and student profile (UC-01) + database models.
-2. Job description parser API and UI (UC-02).
-3. Gap analysis report with validation and PDF export (UC-03).
-4. Roadmap and milestone tracker (UC-04).
+Pick a host pair (e.g. Vercel/Netlify for SvelteKit + Render/Fly/Railway for Flask), point the QR to the **public site URL**, and configure the SvelteKit **adapter** plus env vars so the browser calls your deployed API (same-site or CORS with credentials).
+
+## Local flow
+
+1. `python wsgi.py` and `npm run dev`.
+2. Register → complete **Profile** → **Job postings** → **Gap report** → **Roadmap**.
+
+If npm’s global cache errors on your machine:  
+`NPM_CONFIG_CACHE="$PWD/.npm-cache" npm install` from `frontend/`.

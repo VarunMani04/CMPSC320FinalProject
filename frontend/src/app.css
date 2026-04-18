@@ -1,3 +1,92 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sage Dashboard — mirrors design-system JSON for non-Tailwind consumers */
+:root {
+	--color-canvas: #eceae4;
+	--color-card: #ffffff;
+	--color-card-alt: #f5f4f0;
+	--color-accent: #4a6741;
+	--color-accent-mid: #6a8f67;
+	--color-accent-light: #a8c0a5;
+	--color-accent-ghost: #e8efe7;
+	--color-text-heading: #1a1a1a;
+	--color-text-body: #3a3a3a;
+	--color-text-muted: #8a8a8a;
+	--color-text-label: #b0b0b0;
+	--radius-card: 20px;
+	--radius-button: 12px;
+	--radius-badge: 6px;
+	--shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+	--shadow-card-hover: 0 6px 24px rgba(0, 0, 0, 0.1);
+	--shadow-button: 0 2px 8px rgba(74, 103, 65, 0.25);
+}
+
+@layer base {
+	html {
+		@apply antialiased;
+	}
+	body {
+		@apply bg-canvas font-sans text-[13px] leading-normal text-ink-body;
+	}
+	h1,
+	h2,
+	h3 {
+		@apply font-bold text-ink;
+	}
+}
+
+@layer components {
+	.btn {
+		@apply inline-flex items-center justify-center rounded-btn px-5 py-2.5 text-[13px] font-semibold transition duration-150 ease-out
+			focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage
+			disabled:cursor-not-allowed disabled:opacity-50;
+	}
+	.btn-primary {
+		@apply btn bg-sage text-white shadow-sagebtn hover:brightness-110 active:brightness-95;
+	}
+	.btn-secondary {
+		@apply btn border border-[#DDDDDD] bg-transparent text-ink-body hover:bg-card-alt;
+	}
+	.btn-ghost {
+		@apply btn text-ink-body hover:bg-card-alt;
+	}
+	.card {
+		@apply rounded-card border-0 bg-card p-6 shadow-card transition duration-200 ease-out;
+	}
+	.card-interactive {
+		@apply card hover:-translate-y-0.5 hover:shadow-card-hover;
+	}
+	.field {
+		@apply mt-1 w-full rounded-btn border-0 bg-card px-4 py-2.5 text-[13px] text-ink-body shadow-card
+			placeholder:text-ink-label focus:outline-none focus:ring-2 focus:ring-sage/30;
+	}
+	.label {
+		@apply text-[12px] font-normal tracking-wide text-ink-muted;
+	}
+	.page-title {
+		@apply text-[24px] font-bold tracking-tight text-ink;
+	}
+	.page-sub {
+		@apply mt-1 text-[12px] leading-relaxed text-ink-muted;
+	}
+	.badge {
+		@apply inline-flex items-center rounded-badge px-2 py-0.5 text-2xs font-semibold;
+	}
+	.badge-positive {
+		@apply badge bg-positive-bg text-positive;
+	}
+	.badge-neutral {
+		@apply badge bg-badge-neutral-bg text-badge-neutral-text;
+	}
+	.badge-warn {
+		@apply badge bg-card-alt text-ink-body ring-1 ring-sage-light/40;
+	}
+	.badge-negative {
+		@apply badge bg-negative-bg text-negative;
+	}
+	.link-quiet {
+		@apply font-medium text-sage underline-offset-2 hover:underline;
+	}
+}

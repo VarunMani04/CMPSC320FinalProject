@@ -1,0 +1,117 @@
+from __future__ import annotations
+
+import json
+import os
+import re
+from typing import Any
+
+from openai import OpenAI
+
+DEFAULT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+
+def _client() -> OpenAI | None:
+    key = os.environ.get("OPENAI_API_KEY")
+    if not key:
+        return None
+    return OpenAI(api_key=key)
+
+
+def _chat_json(system: str, user: str, *, max_tokens: int = 4096) -> dict[str, Any]:
+    client = _client()
+    if client is None:
+        raise RuntimeError("OPENAI_API_KEY is not set")
+
+    resp = client.chat.completions.create(
+        model=DEFAULT_MODEL,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.2,
+        max_tokens=max_tokens,
+    )
+    content = resp.choices[0].message.content or "{}"
+    return json.loads(content)
+
+
+def parse_job_description(raw_text: str) -> dict[str, Any]:
+    system = (
+        "You extract structured hiring requirements from job postings. "
+        "Return ONLY valid JSON with keys: "
+        "title_guess (string), required_skills (array of strings), "
+        "preferred_skills (array of strings), qualifications (array of strings), "
+        "vague (boolean, true if the posting is too short or ambiguous to extract reliably). "
+        "Skills should be concise noun phrases (e.g. Python, SQL, teamwork)."
+    )
+    user = f"Job posting text:\n\n{raw_text[:12000]}"
+    data = _chat_json(system, user, max_tokens=2048)
+    for key in ("required_skills", "preferred_skills", "qualifications"):
+        if key not in data:
+            data[key] = []
+    if "title_guess" not in data:
+        data["title_guess"] = ""
+    data["vague"] = bool(data.get("vague"))
+    return data
+
+
+def build_gap_report(profile_summary: str, jobs_payload: list[dict[str, Any]]) -> dict[str, Any]:
+    system = (
+        "You compare a candidate profile to job requirements. Return ONLY valid JSON with keys: "
+        "rows (array of objects with: requirement (string), match (one of gap, partial, strong), "
+        "rationale (string)), comparison (optional object with overlap_skills, unique_per_job as array "
+        "of {job_index, skills} when multiple jobs), summary (string). "
+        "Be conservative: use gap when evidence is weak."
+    )
+    user = json.dumps({"profile": profile_summary, "jobs": jobs_payload}, ensure_ascii=False)
+    return _chat_json(system, user, max_tokens=4096)
+
+
+def build_roadmap(gap_summary: str, gaps_list: list[str]) -> dict[str, Any]:
+    system = (
+        "You create a concise learning roadmap. Return ONLY valid JSON with keys: "
+        "milestones (array of {id (string uuid), title, description, resource_url (https URL or empty), "
+        "weeks_estimate (number 0.5-8)}), intro (string). "
+        "Order milestones by dependency (basics first). Use credible public resources when possible."
+    )
+    user = json.dumps({"gap_summary": gap_summary, "gaps": gaps_list}, ensure_ascii=False)
+    return _chat_json(system, user, max_tokens=4096)
+
+
+def rule_based_gap_fallback(profile_summary: str, jobs_payload: list[dict[str, Any]]) -> dict[str, Any]:
+    """Cheap fallback when LLM is unavailable."""
+    rows = []
+    for job in jobs_payload:
+        for s in job.get("required_skills") or []:
+            if isinstance(s, str) and s.strip():
+                rows.append(
+                    {
+                        "requirement": s.strip(),
+                        "match": "partial",
+                        "rationale": "Heuristic fallback: verify against your profile manually.",
+                    }
+                )
+    return {
+        "rows": rows[:40],
+        "comparison": {"overlap_skills": [], "unique_per_job": []},
+        "summary": "Simplified rule-based report (AI unavailable). Treat items as a checklist, not grades.",
+    }
+
+
+def heuristic_parse(raw_text: str) -> dict[str, Any]:
+    """Very rough keyword extraction without API."""
+    tokens = re.findall(r"[A-Za-z][A-Za-z0-9+#.\-]{1,24}", raw_text)
+    freq: dict[str, int] = {}
+    for t in tokens:
+        if len(t) < 3 or t.lower() in {"the", "and", "for", "you", "our", "all", "any"}:
+            continue
+        freq[t] = freq.get(t, 0) + 1
+    top = sorted(freq, key=lambda k: (-freq[k], k))[:15]
+    return {
+        "title_guess": "",
+        "required_skills": top,
+        "preferred_skills": [],
+        "qualifications": [],
+        "vague": len(raw_text.strip()) < 80,
+    }
