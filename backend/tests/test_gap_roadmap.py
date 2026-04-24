@@ -1,8 +1,8 @@
+from tests.conftest import register_and_verify_otp
+
+
 def test_gap_and_roadmap_without_openai(client):
-    client.post(
-        "/api/auth/register",
-        json={"email": "gap@example.com", "password": "password1"},
-    )
+    register_and_verify_otp(client, "gap@example.com", "password1")
     client.put(
         "/api/profile",
         json={

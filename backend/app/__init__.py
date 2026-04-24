@@ -18,6 +18,9 @@ def create_app(testing: bool = False) -> Flask:
             SECRET_KEY="test-secret",
             SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            # Tests use a fixed OTP; no SMTP.
+            EMAIL_OTP_BYPASS_CODE="123456",
+            EMAIL_OTP_LOG_ONLY=True,
         )
     else:
         flask_app.config.from_object(Config)
