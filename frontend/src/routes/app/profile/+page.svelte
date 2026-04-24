@@ -17,6 +17,8 @@
 	let message = $state<string | null>(null);
 	let err = $state<string | null>(null);
 	let saving = $state(false);
+	let resumeParsing = $state(false);
+	let resumeFileKey = $state(0);
 
 	$effect(() => {
 		if (data.profile) {
@@ -36,6 +38,46 @@
 	function removeSkill(index: number) {
 		skills = skills.filter((_, i) => i !== index);
 		if (!skills.length) skills = [{ name: "", proficiency: "beginner" }];
+	}
+
+	async function fillFromResume(pdf: File | undefined) {
+		if (!pdf) {
+			err = "Choose a PDF résumé first.";
+			return;
+		}
+		message = null;
+		err = null;
+		resumeParsing = true;
+		const fd = new FormData();
+		fd.append("file", pdf);
+		const res = await fetch("/api/profile/parse-resume", {
+			method: "POST",
+			credentials: "include",
+			body: fd
+		});
+		resumeParsing = false;
+		const body = (await res.json().catch(() => ({}))) as {
+			error?: string;
+			full_name?: string;
+			education?: string;
+			experience?: string;
+			skills?: { name: string; proficiency: string }[];
+		};
+		if (!res.ok) {
+			err = body.error || "Could not parse résumé";
+			return;
+		}
+		if (body.full_name != null && body.full_name !== "") full_name = body.full_name;
+		if (body.education != null && body.education !== "") education = body.education;
+		if (body.experience != null && body.experience !== "") experience = body.experience;
+		if (body.skills?.length) {
+			skills = body.skills.map((s) => ({
+				name: s.name || "",
+				proficiency: s.proficiency || "beginner"
+			}));
+		}
+		message = "Loaded from résumé—review the fields and click Save profile.";
+		resumeFileKey += 1;
 	}
 
 	async function save(e: Event) {
@@ -62,7 +104,13 @@
 		});
 		saving = false;
 		if (!res.ok) {
-			err = await res.text();
+			const raw = await res.text();
+			try {
+				const b = JSON.parse(raw) as { error?: string };
+				err = b.error || raw || "Save failed";
+			} catch {
+				err = raw || "Save failed";
+			}
 			return;
 		}
 		message = "Saved.";
@@ -72,7 +120,35 @@
 
 <div class="mx-auto max-w-2xl">
 	<h1 class="page-title">Your profile</h1>
-	<p class="page-sub">This is what the gap analyzer compares to job postings.</p>
+		<p class="page-sub">This is what the gap analyzer compares to job postings.</p>
+		<p class="mt-2 max-w-xl text-[12px] leading-relaxed text-ink-muted">
+			Optional: upload a <strong class="text-ink-body">PDF résumé</strong> to pre-fill name, education, experience, and
+			skills. You can still edit everything before saving.
+		</p>
+
+		<div class="card mt-6 flex flex-col gap-3 border border-dashed border-ink-label/25 bg-card-alt/50 p-5 shadow-none sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<p class="text-[13px] font-bold text-ink">Fill from PDF résumé</p>
+				<p class="mt-1 text-[11px] text-ink-muted">PDF only, up to 4&nbsp;MB. Uses AI when an API key is configured.</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<label class="btn-secondary cursor-pointer text-2xs">
+					{resumeParsing ? "Parsing…" : "Choose PDF"}
+					<input
+						key={resumeFileKey}
+						class="sr-only"
+						type="file"
+						accept=".pdf,application/pdf"
+						disabled={resumeParsing}
+						onchange={(e) => {
+							const f = e.currentTarget.files?.[0];
+							void fillFromResume(f);
+							e.currentTarget.value = "";
+						}}
+					/>
+				</label>
+			</div>
+		</div>
 
 	{#if data.error}
 		<p class="mt-4 rounded-badge bg-negative-bg px-3 py-2 text-[12px] font-medium text-negative">{data.error}</p>

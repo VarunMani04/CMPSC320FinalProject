@@ -6,7 +6,7 @@ See [OUTLINE.md](./OUTLINE.md) for how this maps to the course requirements.
 
 ## What’s implemented
 
-- **UC-01:** Register / log in (email + password), student profile + skills (SQLite).
+- **UC-01:** Register / log in (email + password), student profile + skills (SQLite). Profile page can **optionally fill fields from a PDF résumé** (`POST /api/profile/parse-resume`); save still uses **Save profile**.
 - **UC-02:** Paste one or many job descriptions (`---` separators); analyze and store parsed skills (LLM or heuristic).
 - **UC-03:** Gap report vs profile + saved postings (LLM or rule-based fallback).
 - **UC-04:** Roadmap with milestones; checkboxes PATCH completion.

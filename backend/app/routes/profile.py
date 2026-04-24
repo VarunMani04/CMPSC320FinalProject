@@ -4,9 +4,13 @@ from flask import Blueprint, g, jsonify, request
 
 from app.extensions import db
 from app.models import Skill, StudentProfile
+from app.services import llm as llm_service
 from app.utils.auth import login_required
+from app.utils.resume_pdf import extract_text_from_pdf_bytes
 
 bp = Blueprint("profile", __name__)
+
+_MAX_RESUME_PDF_BYTES = 4 * 1024 * 1024
 
 
 def _profile_dict(p: StudentProfile) -> dict:
@@ -25,6 +29,30 @@ def _profile_dict(p: StudentProfile) -> dict:
             "skill_count": len(p.skills),
         },
     }
+
+
+@bp.post("/parse-resume")
+@login_required
+def parse_resume():
+    """Extract text from an uploaded PDF résumé and return suggested profile fields (not saved until PUT)."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": 'PDF file is required (form field name: "file")'}), 400
+    if not f.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Only PDF files are supported"}), 400
+    data = f.read()
+    if not data:
+        return jsonify({"error": "Empty file"}), 400
+    if len(data) > _MAX_RESUME_PDF_BYTES:
+        return jsonify({"error": "PDF too large (max 4MB)"}), 413
+    try:
+        text = extract_text_from_pdf_bytes(data)
+    except Exception as exc:
+        return jsonify({"error": f"Could not read PDF: {exc!s}"}), 400
+    if not text.strip():
+        return jsonify({"error": "No readable text found in this PDF"}), 400
+    parsed = llm_service.parse_resume_from_text(text)
+    return jsonify(parsed)
 
 
 @bp.get("")

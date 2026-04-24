@@ -114,3 +114,78 @@ def heuristic_parse(raw_text: str) -> dict[str, Any]:
         "qualifications": [],
         "vague": len(raw_text.strip()) < 80,
     }
+
+
+def _normalize_resume_profile(data: dict[str, Any]) -> dict[str, Any]:
+    skills_out: list[dict[str, str]] = []
+    for s in data.get("skills") or []:
+        if isinstance(s, str) and s.strip():
+            skills_out.append({"name": s.strip()[:120], "proficiency": "beginner"})
+            continue
+        if not isinstance(s, dict):
+            continue
+        name = (s.get("name") or "").strip()[:120]
+        if not name:
+            continue
+        prof = (s.get("proficiency") or "beginner").lower()
+        if prof not in ("beginner", "intermediate", "advanced"):
+            prof = "beginner"
+        skills_out.append({"name": name, "proficiency": prof})
+    return {
+        "full_name": (data.get("full_name") or "")[:200],
+        "education": (data.get("education") or "")[:20000],
+        "experience": (data.get("experience") or "")[:20000],
+        "skills": skills_out[:40],
+        "source": str(data.get("source") or "llm"),
+    }
+
+
+def _parse_resume_llm(raw_text: str) -> dict[str, Any]:
+    system = (
+        "You extract structured profile fields from a résumé or CV. "
+        "Return ONLY valid JSON with keys: "
+        "full_name (string), education (string, degrees/schools), "
+        "experience (string, concise summary of roles and projects), "
+        "skills (array of objects with name (string) and proficiency, one of beginner, intermediate, advanced). "
+        "Use beginner when unsure. Skills should be technologies or clear competencies (e.g. Python, leadership)."
+    )
+    user = f"Résumé text:\n\n{raw_text[:14000]}"
+    data = _chat_json(system, user, max_tokens=4096)
+    data["source"] = "llm"
+    return _normalize_resume_profile(data)
+
+
+def heuristic_resume_profile(raw_text: str) -> dict[str, Any]:
+    """Rough extraction when OpenAI is unavailable."""
+    hp = heuristic_parse(raw_text)
+    skill_names = [s for s in hp.get("required_skills") or [] if isinstance(s, str)][:20]
+    skills = [{"name": n, "proficiency": "beginner"} for n in skill_names]
+    lines = [ln.strip() for ln in raw_text.splitlines() if ln.strip()]
+    full_name = ""
+    if lines and "@" not in lines[0] and len(lines[0]) < 120:
+        full_name = lines[0]
+    experience = raw_text.strip()[:8000]
+    return _normalize_resume_profile(
+        {
+            "full_name": full_name,
+            "education": "",
+            "experience": experience,
+            "skills": skills,
+            "source": "heuristic",
+        }
+    )
+
+
+def parse_resume_from_text(raw_text: str) -> dict[str, Any]:
+    """Parse résumé plain text into profile-shaped fields (LLM or heuristic)."""
+    text = (raw_text or "").strip()
+    if not text:
+        return _normalize_resume_profile(
+            {"full_name": "", "education": "", "experience": "", "skills": [], "source": "empty"}
+        )
+    if _client() is not None:
+        try:
+            return _parse_resume_llm(text)
+        except Exception:
+            return heuristic_resume_profile(text)
+    return heuristic_resume_profile(text)
