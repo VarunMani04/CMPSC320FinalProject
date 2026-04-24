@@ -35,6 +35,8 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env        # set SECRET_KEY; add GEMINI_API_KEY to enable LLM features
 python wsgi.py              # http://127.0.0.1:5000 — GET /api/health
+
+**macOS / “Port 5000 is in use”:** System **AirPlay Receiver** often binds `:5000`. Either turn it off (*System Settings → General → AirDrop & Handoff → AirPlay Receiver*), **or** set `PORT=5001` in `backend/.env`, then set `FLASK_PORT=5001` in `frontend/.env` and `API_BASE_URL=http://127.0.0.1:5001` in `showcase/.env`.
 pytest
 ```
 

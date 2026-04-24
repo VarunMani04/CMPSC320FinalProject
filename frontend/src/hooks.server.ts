@@ -3,7 +3,7 @@ import { env } from "$env/dynamic/private";
 
 /**
  * Proxy /api/* to Flask so browser POSTs never hit a static file server (which often returns 403).
- * Set API_ORIGIN in .env for production (e.g. https://your-api.example.com). Defaults to local Flask.
+ * Set API_ORIGIN for a full backend URL, or FLASK_PORT (e.g. 5001) to match backend `PORT`. Defaults to http://127.0.0.1:5000.
  */
 export const handle: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
@@ -11,7 +11,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
-	const origin = (env.API_ORIGIN ?? "http://127.0.0.1:5000").replace(/\/$/, "");
+	const flaskPort = env.FLASK_PORT ?? "5000";
+	const origin = (env.API_ORIGIN ?? `http://127.0.0.1:${flaskPort}`).replace(/\/$/, "");
 	const target = `${origin}${path}${event.url.search}`;
 
 	const headers = new Headers();
