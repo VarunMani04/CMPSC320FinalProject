@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Log in · Student Skill Gap Analyzer</title>
+	<title>Log in · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -36,7 +36,7 @@
 <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
 	<a class="text-[12px] text-ink-muted transition hover:text-ink-body" href="/">← Back home</a>
 	<h1 class="page-title mt-6">Welcome back</h1>
-	<p class="page-sub">Log in to continue your skill gap journey.</p>
+	<p class="page-sub">Log in to continue with PostingPal.</p>
 
 	<form class="card mt-8 space-y-5 shadow-card" onsubmit={submit}>
 		<div>

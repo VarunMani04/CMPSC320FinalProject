@@ -28,7 +28,7 @@
 			class="flex h-10 w-10 items-center justify-center rounded-full bg-sage-ghost text-xs font-bold text-sage"
 			title="Home"
 		>
-			SG
+			PP
 		</a>
 		<nav class="mt-10 flex flex-col items-center gap-5">
 			{#each links as link}
@@ -95,7 +95,7 @@
 			class="flex min-h-[72px] items-center justify-between gap-4 border-b border-transparent px-5 py-4 sm:px-8"
 		>
 			<div>
-				<p class="text-[12px] font-normal text-ink-muted">Skill gap workspace</p>
+				<p class="text-[12px] font-normal text-ink-muted">PostingPal</p>
 				<p class="text-[18px] font-bold tracking-tight text-ink">Hi, {firstName}</p>
 			</div>
 			<div class="hidden items-center gap-2 sm:flex">
@@ -106,7 +106,7 @@
 		<!-- Mobile top bar -->
 		<div class="border-b border-[#EEEEEE] bg-card px-4 py-3 sm:hidden">
 			<div class="flex items-center justify-between gap-2">
-				<span class="text-sm font-bold text-ink">SG</span>
+				<span class="text-sm font-bold text-ink">PP</span>
 				<LogoutButton />
 			</div>
 			<nav class="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Main navigation">

@@ -1,0 +1,6 @@
+streamlit>=1.40,<2
+pdfplumber>=0.11,<0.12
+google-generativeai>=0.8,<0.9
+# Pin spaCy 3.7.x for broad wheel support (3.8+ can require newer thinc builds).
+spacy==3.7.2
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl

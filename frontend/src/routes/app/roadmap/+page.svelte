@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Roadmap · Student Skill Gap Analyzer</title>
+	<title>Roadmap · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">

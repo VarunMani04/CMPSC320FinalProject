@@ -79,15 +79,14 @@ def build_roadmap(gap_summary: str, gaps_list: list[str]) -> dict[str, Any]:
     return _chat_json(system, user, max_tokens=4096)
 
 
-def rule_based_gap_fallback(profile_summary: str, jobs_payload: list[dict[str, Any]]) -> dict[str, Any]:
-    """Cheap fallback when LLM is unavailable."""
+def rule_based_gap_fallback(profile_summary: str, jobs: list[dict[str, Any]]) -> dict[str, Any]:
     rows = []
-    for job in jobs_payload:
-        for s in job.get("required_skills") or []:
-            if isinstance(s, str) and s.strip():
+    for job in jobs:
+        for i in job.get("required_skills") or []:
+            if isinstance(i, str) and i.strip():
                 rows.append(
                     {
-                        "requirement": s.strip(),
+                        "requirement": i.strip(),
                         "match": "partial",
                         "rationale": "Heuristic fallback: verify against your profile manually.",
                     }

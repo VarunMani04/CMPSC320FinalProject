@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Register · Student Skill Gap Analyzer</title>
+	<title>Register · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -33,7 +33,6 @@
 <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
 	<a class="text-[12px] text-ink-muted transition hover:text-ink-body" href="/">← Back home</a>
 	<h1 class="page-title mt-6">Create your account</h1>
-	<p class="page-sub">Takes a minute—then you’ll set up your student profile.</p>
 
 	<form class="card mt-8 space-y-5 shadow-card" onsubmit={submit}>
 		<div>

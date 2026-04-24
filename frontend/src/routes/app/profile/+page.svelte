@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Profile · Student Skill Gap Analyzer</title>
+	<title>Profile · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
