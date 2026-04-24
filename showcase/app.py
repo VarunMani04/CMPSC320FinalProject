@@ -142,6 +142,42 @@ def _api_base() -> str:
     return (os.environ.get("API_BASE_URL") or "http://127.0.0.1:5000").rstrip("/")
 
 
+def _http_error_message(r: requests.Response, fallback: str) -> str:
+    """Parse Flask JSON `{error}` or return body / status for debugging."""
+    raw = (r.text or "").strip()
+    try:
+        data = r.json()
+    except Exception:
+        return raw or f"{fallback} (HTTP {r.status_code})"
+    if isinstance(data, dict):
+        msg = data.get("error") or data.get("message")
+        if msg:
+            return str(msg)
+    return raw or f"{fallback} (HTTP {r.status_code})"
+
+
+def _inject_streamlit_auth_secondary_white() -> None:
+    """Style Streamlit secondary buttons as white cards (auth screens use few secondaries)."""
+    st.markdown(
+        """
+<style>
+button[data-testid="baseButton-secondary"],
+button[data-testid="stBaseButton-secondary"] {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+button[data-testid="baseButton-secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:hover {
+  background-color: #fafafa !important;
+}
+</style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _http() -> requests.Session:
     if "http_client" not in st.session_state:
         st.session_state.http_client = requests.Session()
@@ -181,25 +217,7 @@ def _render_brand_header() -> None:
 def _render_auth_landing(ds: dict[str, Any]) -> None:
     """Centered hero: tagline, PostingPal, subtitle, Create account + white Log in."""
     _inject_design_system_css(ds)
-    st.markdown(
-        """
-<style>
-/* Injected only on landing: single secondary CTA is Log in — white card style */
-button[data-testid="baseButton-secondary"],
-button[data-testid="stBaseButton-secondary"] {
-  background-color: #ffffff !important;
-  color: #1a1a1a !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
-}
-button[data-testid="baseButton-secondary"]:hover,
-button[data-testid="stBaseButton-secondary"]:hover {
-  background-color: #fafafa !important;
-}
-</style>
-        """,
-        unsafe_allow_html=True,
-    )
+    _inject_streamlit_auth_secondary_white()
     _, center, _ = st.columns([1, 2.4, 1])
     with center:
         st.markdown(
@@ -229,6 +247,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
 
 def _render_auth_login(ds: dict[str, Any]) -> None:
     _inject_design_system_css(ds)
+    _inject_streamlit_auth_secondary_white()
     _, c, _ = st.columns([1, 2, 1])
     with c:
         if st.button("← Back home"):
@@ -249,7 +268,7 @@ def _render_auth_login(ds: dict[str, Any]) -> None:
                 label_visibility="collapsed",
                 autocomplete="current-password",
             )
-            submitted = st.form_submit_button("Log in", type="primary", use_container_width=True)
+            submitted = st.form_submit_button("Log in", type="secondary", use_container_width=True)
             if submitted:
                 if not email.strip() or not password:
                     st.error("Enter email and password.")
@@ -268,22 +287,19 @@ def _render_auth_login(ds: dict[str, Any]) -> None:
                         if r.status_code == 200:
                             st.rerun()
                         else:
-                            try:
-                                err = r.json().get("error", r.text)
-                            except Exception:
-                                err = r.text or "Sign-in failed"
-                            st.error(err)
+                            st.error(_http_error_message(r, "Sign-in failed"))
         st.markdown(
             '<p style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:1.25rem;">New here?</p>',
             unsafe_allow_html=True,
         )
-        if st.button("Create an account", use_container_width=True):
+        if st.button("Create an account", type="primary", use_container_width=True):
             st.session_state.auth_panel = "register"
             st.rerun()
 
 
 def _render_auth_register(ds: dict[str, Any]) -> None:
     _inject_design_system_css(ds)
+    _inject_streamlit_auth_secondary_white()
     _, c, _ = st.columns([1, 2, 1])
     with c:
         if st.button("← Back home"):
@@ -318,11 +334,7 @@ def _render_auth_register(ds: dict[str, Any]) -> None:
                         if r.status_code == 201:
                             st.rerun()
                         else:
-                            try:
-                                err = r.json().get("error", r.text)
-                            except Exception:
-                                err = r.text or "Registration failed"
-                            st.error(err)
+                            st.error(_http_error_message(r, "Registration failed"))
         st.markdown(
             '<p style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:1.25rem;">Already have an account?</p>',
             unsafe_allow_html=True,

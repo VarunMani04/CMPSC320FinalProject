@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import re
-
 from flask import Blueprint, jsonify, request, session
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models import StudentProfile, User
@@ -10,7 +9,17 @@ from app.utils.auth import current_user
 
 bp = Blueprint("auth", __name__)
 
-_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def _valid_email(email: str) -> bool:
+    """Practical check: single @, non-empty local and domain (allows user@localhost)."""
+    if email != email.strip() or email.count("@") != 1:
+        return False
+    local, domain = email.split("@", 1)
+    if not local or not domain:
+        return False
+    if any(c.isspace() for c in email):
+        return False
+    return True
 
 
 @bp.post("/register")
@@ -18,7 +27,7 @@ def register():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
-    if not email or not _EMAIL_RE.match(email):
+    if not email or not _valid_email(email):
         return jsonify({"error": "Valid email is required"}), 400
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
@@ -30,7 +39,11 @@ def register():
     db.session.add(user)
     db.session.flush()
     db.session.add(StudentProfile(user_id=user.id))
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "An account with this email already exists"}), 409
     session.clear()
     session["user_id"] = user.id
     return jsonify({"user": {"id": user.id, "email": user.email}}), 201
