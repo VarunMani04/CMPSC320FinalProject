@@ -5,35 +5,71 @@ import os
 import re
 from typing import Any
 
-from openai import OpenAI
+from google import genai
+from google.genai import types
 
-DEFAULT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+_DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
 
 
-def _client() -> OpenAI | None:
-    key = os.environ.get("OPENAI_API_KEY")
-    if not key:
-        return None
-    return OpenAI(api_key=key)
+def _model_name() -> str:
+    return (os.environ.get("GEMINI_MODEL") or _DEFAULT_GEMINI_MODEL).strip()
+
+
+def _api_key() -> str | None:
+    k = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
+    return k or None
+
+
+def is_llm_available() -> bool:
+    """True when a Gemini API key is configured (Google AI Studio or compatible)."""
+    return _api_key() is not None
+
+
+def _extract_response_text(response: Any) -> str:
+    try:
+        return (response.text or "").strip()
+    except (ValueError, AttributeError, TypeError):
+        pass
+    chunks: list[str] = []
+    for cand in getattr(response, "candidates", None) or []:
+        content = getattr(cand, "content", None)
+        parts = getattr(content, "parts", None) if content else None
+        for part in parts or []:
+            t = getattr(part, "text", None)
+            if t:
+                chunks.append(t)
+    return "".join(chunks).strip()
+
+
+def _safe_json_loads(raw: str) -> dict[str, Any]:
+    t = raw.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:json)?\s*", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\s*```\s*$", "", t)
+    return json.loads(t)
 
 
 def _chat_json(system: str, user: str, *, max_tokens: int = 4096) -> dict[str, Any]:
-    client = _client()
-    if client is None:
-        raise RuntimeError("OPENAI_API_KEY is not set")
+    key = _api_key()
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set")
 
-    resp = client.chat.completions.create(
-        model=DEFAULT_MODEL,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.2,
-        max_tokens=max_tokens,
+    client = genai.Client(api_key=key)
+    model_name = _model_name()
+    response = client.models.generate_content(
+        model=model_name,
+        contents=user,
+        config=types.GenerateContentConfig(
+            system_instruction=system,
+            temperature=0.2,
+            max_output_tokens=max_tokens,
+            response_mime_type="application/json",
+        ),
     )
-    content = resp.choices[0].message.content or "{}"
-    return json.loads(content)
+    text = _extract_response_text(response)
+    if not text:
+        raise RuntimeError("Gemini returned an empty response (safety filter or quota).")
+    return _safe_json_loads(text)
 
 
 def parse_job_description(raw_text: str) -> dict[str, Any]:
@@ -156,7 +192,7 @@ def _parse_resume_llm(raw_text: str) -> dict[str, Any]:
 
 
 def heuristic_resume_profile(raw_text: str) -> dict[str, Any]:
-    """Rough extraction when OpenAI is unavailable."""
+    """Rough extraction when Gemini is unavailable."""
     hp = heuristic_parse(raw_text)
     skill_names = [s for s in hp.get("required_skills") or [] if isinstance(s, str)][:20]
     skills = [{"name": n, "proficiency": "beginner"} for n in skill_names]
@@ -183,7 +219,7 @@ def parse_resume_from_text(raw_text: str) -> dict[str, Any]:
         return _normalize_resume_profile(
             {"full_name": "", "education": "", "experience": "", "skills": [], "source": "empty"}
         )
-    if _client() is not None:
+    if is_llm_available():
         try:
             return _parse_resume_llm(text)
         except Exception:

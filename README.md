@@ -1,6 +1,6 @@
 # PostingPal (CMPSC 320)
 
-Full-stack app: **SvelteKit + Tailwind** (frontend), **Flask + Gunicorn + SQLite** (backend), **OpenAI** optional for JD parsing, gap analysis, and roadmaps (heuristic fallbacks run without an API key to save credits).
+Full-stack app: **SvelteKit + Tailwind** (frontend), **Flask + Gunicorn + SQLite** (backend), **Google Gemini** optional for JD parsing, gap analysis, and roadmaps (heuristic fallbacks run without an API key).
 
 See [OUTLINE.md](./OUTLINE.md) for how this maps to the course requirements.
 
@@ -33,7 +33,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # set SECRET_KEY; add OPENAI_API_KEY to enable LLM
+cp .env.example .env        # set SECRET_KEY; add GEMINI_API_KEY to enable LLM features
 python wsgi.py              # http://127.0.0.1:5000 — GET /api/health
 pytest
 ```
@@ -55,7 +55,7 @@ Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session coo
 ## Environment
 
 - **Never commit** `.env` or API keys.
-- **`OPENAI_MODEL`:** defaults to `gpt-4o-mini` (set in `.env` if you want another small/cheap model).
+- **`GEMINI_MODEL`:** defaults to `gemini-2.0-flash` (override in `.env` if you prefer another Gemini id).
 - **Production / poster QR:** deploy frontend + backend, use HTTPS, set `SESSION_COOKIE_SECURE=true`, and add your public site origin to the `origins` list in `backend/app/__init__.py` for CORS + credentials.
 
 ## Streamlit console (`showcase/`)

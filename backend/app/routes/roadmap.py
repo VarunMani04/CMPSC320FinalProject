@@ -88,7 +88,7 @@ def generate():
     gaps = [r.get("requirement") for r in rows if isinstance(r, dict) and r.get("match") == "gap"]
     summary = data.get("summary") or ""
 
-    use_llm = llm_service._client() is not None  # noqa: SLF001
+    use_llm = llm_service.is_llm_available()
     milestones_raw: list = []
     intro = ""
     try:

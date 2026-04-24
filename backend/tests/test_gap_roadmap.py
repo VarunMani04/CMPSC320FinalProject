@@ -1,4 +1,4 @@
-def test_gap_and_roadmap_without_openai(client):
+def test_gap_and_roadmap_without_llm(client):
     client.post(
         "/api/auth/register",
         json={"email": "gap@example.com", "password": "password1"},

@@ -60,7 +60,7 @@ def generate():
         jobs_payload.append({"job_id": j.id, **parsed})
 
     profile_summary = _profile_text(profile)
-    use_llm = llm_service._client() is not None  # noqa: SLF001
+    use_llm = llm_service.is_llm_available()
     try:
         if use_llm:
             report = llm_service.build_gap_report(profile_summary, jobs_payload)
