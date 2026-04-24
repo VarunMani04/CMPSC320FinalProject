@@ -148,12 +148,19 @@ def _http_error_message(r: requests.Response, fallback: str) -> str:
     try:
         data = r.json()
     except Exception:
-        return raw or f"{fallback} (HTTP {r.status_code})"
-    if isinstance(data, dict):
-        msg = data.get("error") or data.get("message")
-        if msg:
-            return str(msg)
-    return raw or f"{fallback} (HTTP {r.status_code})"
+        msg = raw or f"{fallback} (HTTP {r.status_code})"
+    else:
+        if isinstance(data, dict):
+            msg = data.get("error") or data.get("message")
+            msg = str(msg) if msg else (raw or f"{fallback} (HTTP {r.status_code})")
+        else:
+            msg = raw or f"{fallback} (HTTP {r.status_code})"
+    if r.status_code == 403:
+        msg += (
+            " — Check API_BASE_URL: it must be your Flask server (e.g. http://127.0.0.1:5000). "
+            "A static site or CDN often returns 403 on POST /api."
+        )
+    return msg
 
 
 def _inject_streamlit_auth_secondary_white() -> None:

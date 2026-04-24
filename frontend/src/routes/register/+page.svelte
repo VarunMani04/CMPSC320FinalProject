@@ -38,6 +38,10 @@
 			} catch {
 				if (text.trim()) msg = text.trim().slice(0, 200);
 			}
+			if (res.status === 403) {
+				msg +=
+					" The app proxies /api to Flask (see hooks.server.ts). Use `npm run dev` with Flask on :5000, or set API_ORIGIN if your API lives elsewhere.";
+			}
 			error = msg;
 			return;
 		}

@@ -133,18 +133,19 @@
 				</p>
 				<label class="btn-secondary mt-3 inline-flex cursor-pointer text-2xs">
 					{resumeParsing ? "Parsing…" : "Choose PDF"}
-					<input
-						key={resumeFileKey}
-						class="sr-only"
-						type="file"
-						accept=".pdf,application/pdf"
-						disabled={resumeParsing}
-						onchange={(e) => {
-							const f = e.currentTarget.files?.[0];
-							void fillFromResume(f);
-							e.currentTarget.value = "";
-						}}
-					/>
+					{#key resumeFileKey}
+						<input
+							class="sr-only"
+							type="file"
+							accept=".pdf,application/pdf"
+							disabled={resumeParsing}
+							onchange={(e) => {
+								const f = e.currentTarget.files?.[0];
+								void fillFromResume(f);
+								e.currentTarget.value = "";
+							}}
+						/>
+					{/key}
 				</label>
 			</div>
 
