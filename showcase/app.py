@@ -541,7 +541,7 @@ def _page_profile(http: requests.Session) -> None:
         use_container_width=True,
         hide_index=True,
     )
-    up = st.file_uploader("Import from PDF résumé (optional)", type=["pdf"])
+    up = st.file_uploader("Import from PDF resume (optional)", type=["pdf"])
     if up is not None and st.button("Extract into form", type="secondary"):
         try:
             files = {"file": (up.name, up.getvalue(), "application/pdf")}

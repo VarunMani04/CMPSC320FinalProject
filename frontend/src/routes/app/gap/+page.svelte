@@ -84,6 +84,6 @@
 			</div>
 		</div>
 	{:else}
-		<p class="mt-8 text-[12px] text-ink-muted">No report yet—save job postings first, then generate.</p>
+		<p class="mt-8 text-[12px] text-ink-muted">No report yet.</p>
 	{/if}
 </div>

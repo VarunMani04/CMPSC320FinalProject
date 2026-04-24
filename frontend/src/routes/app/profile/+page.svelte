@@ -42,7 +42,7 @@
 
 	async function fillFromResume(pdf: File | undefined) {
 		if (!pdf) {
-			err = "Choose a PDF résumé first.";
+			err = "Choose a PDF resume first.";
 			return;
 		}
 		message = null;
@@ -64,7 +64,7 @@
 			skills?: { name: string; proficiency: string }[];
 		};
 		if (!res.ok) {
-			err = body.error || "Could not parse résumé";
+			err = body.error || "Could not parse resume";
 			return;
 		}
 		if (body.full_name != null && body.full_name !== "") full_name = body.full_name;
@@ -76,7 +76,7 @@
 				proficiency: s.proficiency || "beginner"
 			}));
 		}
-		message = "Loaded from résumé—review the fields and click Save profile.";
+		message = "Loaded from resume. Click Save profile.";
 		resumeFileKey += 1;
 	}
 
@@ -127,9 +127,9 @@
 	{:else}
 		<form class="card mt-8 space-y-5 shadow-card" onsubmit={save}>
 			<div class="rounded-btn bg-card-alt p-4">
-				<p class="label">Optional · PDF résumé</p>
+				<p class="label">Optional · PDF resume</p>
 				<p class="mt-1 text-[12px] leading-relaxed text-ink-muted">
-					Upload a PDF (max 4&nbsp;MB) to pre-fill the fields below. Review and edit before saving.
+					Upload a PDF (max 4&nbsp;MB) to pre-fill the fields below.
 				</p>
 				<label class="btn-secondary mt-3 inline-flex cursor-pointer text-2xs">
 					{resumeParsing ? "Parsing…" : "Choose PDF"}

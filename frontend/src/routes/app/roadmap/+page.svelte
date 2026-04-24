@@ -89,6 +89,6 @@
 			{/each}
 		</ul>
 	{:else}
-		<p class="mt-8 text-[12px] text-ink-muted">No roadmap yet—generate a gap report first.</p>
+		<p class="mt-8 text-[12px] text-ink-muted">No roadmap yet.</p>
 	{/if}
 </div>
