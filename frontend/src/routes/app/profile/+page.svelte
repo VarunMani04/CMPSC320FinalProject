@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Profile · Student Skill Gap Analyzer</title>
+	<title>Profile · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -17,6 +17,8 @@
 	let message = $state<string | null>(null);
 	let err = $state<string | null>(null);
 	let saving = $state(false);
+	let resumeParsing = $state(false);
+	let resumeFileKey = $state(0);
 
 	$effect(() => {
 		if (data.profile) {
@@ -36,6 +38,46 @@
 	function removeSkill(index: number) {
 		skills = skills.filter((_, i) => i !== index);
 		if (!skills.length) skills = [{ name: "", proficiency: "beginner" }];
+	}
+
+	async function fillFromResume(pdf: File | undefined) {
+		if (!pdf) {
+			err = "Choose a PDF resume first.";
+			return;
+		}
+		message = null;
+		err = null;
+		resumeParsing = true;
+		const fd = new FormData();
+		fd.append("file", pdf);
+		const res = await fetch("/api/profile/parse-resume", {
+			method: "POST",
+			credentials: "include",
+			body: fd
+		});
+		resumeParsing = false;
+		const body = (await res.json().catch(() => ({}))) as {
+			error?: string;
+			full_name?: string;
+			education?: string;
+			experience?: string;
+			skills?: { name: string; proficiency: string }[];
+		};
+		if (!res.ok) {
+			err = body.error || "Could not parse resume";
+			return;
+		}
+		if (body.full_name != null && body.full_name !== "") full_name = body.full_name;
+		if (body.education != null && body.education !== "") education = body.education;
+		if (body.experience != null && body.experience !== "") experience = body.experience;
+		if (body.skills?.length) {
+			skills = body.skills.map((s) => ({
+				name: s.name || "",
+				proficiency: s.proficiency || "beginner"
+			}));
+		}
+		message = "Loaded from resume. Click Save profile.";
+		resumeFileKey += 1;
 	}
 
 	async function save(e: Event) {
@@ -62,7 +104,13 @@
 		});
 		saving = false;
 		if (!res.ok) {
-			err = await res.text();
+			const raw = await res.text();
+			try {
+				const b = JSON.parse(raw) as { error?: string };
+				err = b.error || raw || "Save failed";
+			} catch {
+				err = raw || "Save failed";
+			}
 			return;
 		}
 		message = "Saved.";
@@ -72,12 +120,35 @@
 
 <div class="mx-auto max-w-2xl">
 	<h1 class="page-title">Your profile</h1>
-	<p class="page-sub">This is what the gap analyzer compares to job postings.</p>
+		<p class="page-sub">This is what the gap analyzer compares to job postings.</p>
 
 	{#if data.error}
 		<p class="mt-4 rounded-badge bg-negative-bg px-3 py-2 text-[12px] font-medium text-negative">{data.error}</p>
 	{:else}
 		<form class="card mt-8 space-y-5 shadow-card" onsubmit={save}>
+			<div class="rounded-btn bg-card-alt p-4">
+				<p class="label">Optional · PDF resume</p>
+				<p class="mt-1 text-[12px] leading-relaxed text-ink-muted">
+					Upload a PDF (max 4&nbsp;MB) to pre-fill the fields below.
+				</p>
+				<label class="btn-secondary mt-3 inline-flex cursor-pointer text-2xs">
+					{resumeParsing ? "Parsing…" : "Choose PDF"}
+					{#key resumeFileKey}
+						<input
+							class="sr-only"
+							type="file"
+							accept=".pdf,application/pdf"
+							disabled={resumeParsing}
+							onchange={(e) => {
+								const f = e.currentTarget.files?.[0];
+								void fillFromResume(f);
+								e.currentTarget.value = "";
+							}}
+						/>
+					{/key}
+				</label>
+			</div>
+
 			<div>
 				<label class="label" for="full_name">Full name</label>
 				<input id="full_name" class="field" bind:value={full_name} required />

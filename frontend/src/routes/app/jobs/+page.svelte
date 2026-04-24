@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Job postings · Student Skill Gap Analyzer</title>
+	<title>Job postings · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -52,7 +52,7 @@
 	<p class="page-sub">
 		Paste one or more full postings. Separate them with a line containing only <code
 			class="rounded-badge bg-card-alt px-1.5 py-0.5 text-2xs font-semibold text-ink-body">---</code
-		>. Each run replaces your saved postings (good for a fresh comparison).
+		>. Each run replaces your saved postings.
 	</p>
 
 	<form class="card mt-8 space-y-5 shadow-card" onsubmit={analyze}>
@@ -74,7 +74,7 @@
 	<section class="mt-12">
 		<h2 class="text-[12px] font-semibold uppercase tracking-wide text-ink-label">Saved postings</h2>
 		{#if !data.jobsPayload.jobs?.length}
-			<p class="mt-2 text-[12px] leading-relaxed text-ink-muted">Nothing yet—your parsed results will show up here.</p>
+			<p class="mt-2 text-[12px] leading-relaxed text-ink-muted">No saved postings yet.</p>
 		{:else}
 			<ul class="mt-4 grid gap-4">
 				{#each data.jobsPayload.jobs as job}

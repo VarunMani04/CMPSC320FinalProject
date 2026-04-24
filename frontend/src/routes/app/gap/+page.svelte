@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Gap report · Student Skill Gap Analyzer</title>
+	<title>Gap report · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -84,6 +84,6 @@
 			</div>
 		</div>
 	{:else}
-		<p class="mt-8 text-[12px] text-ink-muted">No report yet—save job postings first, then generate.</p>
+		<p class="mt-8 text-[12px] text-ink-muted">No report yet.</p>
 	{/if}
 </div>

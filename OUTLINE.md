@@ -1,6 +1,6 @@
-# Student Skill Gap Analyzer — Development Outline
+# PostingPal — Development Outline
 
-Source: CMPSC 320 requirements (Student Skill Gap Analyzer). Stack: **SvelteKit + Tailwind** (frontend), **Flask + Gunicorn** (backend), **Claude API** (AI), **PostgreSQL** (optional), **Docker** (optional), **Pytest** (backend tests).
+Source: CMPSC 320 requirements (course project: Student Skill Gap Analyzer). This repo implements that spec as **PostingPal**. Stack: **SvelteKit + Tailwind** (frontend), **Flask + Gunicorn** (backend), **Claude API** (AI), **PostgreSQL** (optional), **Docker** (optional), **Pytest** (backend tests).
 
 ## 1. Product goals
 

@@ -1,4 +1,4 @@
-def test_jobs_analyze_heuristic_without_openai(client):
+def test_jobs_analyze_heuristic_without_llm(client):
     client.post(
         "/api/auth/register",
         json={"email": "jobs@example.com", "password": "password1"},

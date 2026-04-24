@@ -28,6 +28,9 @@ def create_app(testing: bool = False) -> Flask:
         "http://127.0.0.1:4173",
         "http://localhost:4173",
     ]
+    extra = os.environ.get("CORS_ORIGINS", "").strip()
+    if extra:
+        origins.extend(o.strip() for o in extra.split(",") if o.strip())
     CORS(
         flask_app,
         resources={r"/api/*": {"origins": origins, "supports_credentials": True}},

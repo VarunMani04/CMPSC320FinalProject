@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Log in · Student Skill Gap Analyzer</title>
+	<title>Log in · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -16,16 +16,31 @@
 		e.preventDefault();
 		error = null;
 		loading = true;
-		const res = await fetch("/api/auth/login", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email, password })
-		});
+		let res: Response;
+		try {
+			res = await fetch("/api/auth/login", {
+				method: "POST",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: email.trim(), password })
+			});
+		} catch {
+			loading = false;
+			error =
+				"Could not reach the API. Start the Flask backend (port 5000) or check your dev proxy.";
+			return;
+		}
 		loading = false;
 		if (!res.ok) {
-			const b = await res.json().catch(() => ({}));
-			error = (b as { error?: string }).error || "Could not log in";
+			const text = await res.text().catch(() => "");
+			let msg = `Could not log in (HTTP ${res.status})`;
+			try {
+				const b = JSON.parse(text) as { error?: string };
+				if (b.error) msg = b.error;
+			} catch {
+				if (text.trim()) msg = text.trim().slice(0, 200);
+			}
+			error = msg;
 			return;
 		}
 		const next = get(page).url.searchParams.get("next") || "/app/dashboard";
@@ -36,7 +51,6 @@
 <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
 	<a class="text-[12px] text-ink-muted transition hover:text-ink-body" href="/">← Back home</a>
 	<h1 class="page-title mt-6">Welcome back</h1>
-	<p class="page-sub">Log in to continue your skill gap journey.</p>
 
 	<form class="card mt-8 space-y-5 shadow-card" onsubmit={submit}>
 		<div>
@@ -57,12 +71,12 @@
 		{#if error}
 			<p class="rounded-badge bg-negative-bg px-3 py-2 text-[12px] font-medium text-negative">{error}</p>
 		{/if}
-		<button class="btn-primary w-full" type="submit" disabled={loading}>
+		<button class="btn-white w-full" type="submit" disabled={loading}>
 			{loading ? "Signing in…" : "Log in"}
 		</button>
 	</form>
-	<p class="mt-8 text-center text-[12px] text-ink-muted">
-		New here?
-		<a class="link-quiet" href="/register">Create an account</a>
+	<p class="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-[12px] text-ink-muted">
+		<span>New here?</span>
+		<a class="btn-primary shrink-0 px-4 py-2 text-[13px]" href="/register">Create an account</a>
 	</p>
 </main>

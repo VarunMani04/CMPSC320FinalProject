@@ -1,0 +1,450 @@
+{
+  "designSystem": {
+    "meta": {
+      "name": "Sage Dashboard Design System",
+      "style": "Organic Minimal / Soft Naturalist",
+      "description": "A calm, nature-inspired financial/property dashboard. Characterized by warm off-white backgrounds, muted sage greens, rounded cards, subtle shadows, and a clean grid layout. Prioritizes clarity and approachability over data density.",
+      "vibe": "Like a premium wellness app applied to finance — nothing feels urgent or alarming, everything feels under control."
+    },
+
+    "colorPalette": {
+      "description": "Warm neutrals dominate; sage green is the single accent used for both data visualization and interactive elements. No blues, purples, or cold tones.",
+      "background": {
+        "canvas": "#ECEAE4",
+        "card": "#FFFFFF",
+        "cardAlt": "#F5F4F0"
+      },
+      "accent": {
+        "primary": "#4A6741",
+        "primaryMid": "#6A8F67",
+        "primaryLight": "#A8C0A5",
+        "primaryGhost": "#E8EFE7"
+      },
+      "text": {
+        "heading": "#1A1A1A",
+        "body": "#3A3A3A",
+        "muted": "#8A8A8A",
+        "label": "#B0B0B0",
+        "onDark": "#FFFFFF"
+      },
+      "semantic": {
+        "positive": "#4A6741",
+        "positiveBackground": "#E8EFE7",
+        "negative": "#C0392B",
+        "negativeBackground": "#FDECEA",
+        "neutralBadgeBackground": "#F0F0EE",
+        "neutralBadgeText": "#6A6A6A"
+      },
+      "sidebar": {
+        "background": "#FFFFFF",
+        "iconDefault": "#AAAAAA",
+        "iconActive": "#FFFFFF",
+        "iconActiveBackground": "#1A1A1A"
+      }
+    },
+
+    "typography": {
+      "description": "Clean, modern sans-serif throughout. Large bold numerics for KPI values, small muted labels above them. No serif or decorative fonts.",
+      "fontFamily": {
+        "primary": "Inter, 'DM Sans', 'Nunito Sans', sans-serif",
+        "numeric": "inherit"
+      },
+      "scale": {
+        "xs": "11px",
+        "sm": "12px",
+        "base": "13px",
+        "md": "14px",
+        "lg": "16px",
+        "xl": "18px",
+        "2xl": "24px",
+        "3xl": "32px",
+        "4xl": "40px"
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700,
+        "extrabold": 800
+      },
+      "lineHeight": {
+        "tight": 1.1,
+        "snug": 1.3,
+        "normal": 1.5,
+        "relaxed": 1.7
+      },
+      "patterns": {
+        "kpiLabel": {
+          "size": "12px",
+          "weight": 400,
+          "color": "text.muted",
+          "letterSpacing": "0.01em",
+          "textTransform": "none"
+        },
+        "kpiValue": {
+          "size": "28px–36px",
+          "weight": 700,
+          "color": "text.heading",
+          "letterSpacing": "-0.02em"
+        },
+        "cardTitle": {
+          "size": "16px",
+          "weight": 700,
+          "color": "text.heading"
+        },
+        "bodySmall": {
+          "size": "12px",
+          "weight": 400,
+          "color": "text.muted",
+          "lineHeight": 1.6
+        },
+        "badge": {
+          "size": "11px",
+          "weight": 600,
+          "borderRadius": "6px",
+          "padding": "2px 6px"
+        }
+      }
+    },
+
+    "spacing": {
+      "description": "Generous internal padding in cards, tight row spacing in lists. 4px base unit.",
+      "baseUnit": 4,
+      "scale": {
+        "1": "4px",
+        "2": "8px",
+        "3": "12px",
+        "4": "16px",
+        "5": "20px",
+        "6": "24px",
+        "8": "32px",
+        "10": "40px",
+        "12": "48px"
+      },
+      "card": {
+        "padding": "24px",
+        "paddingCompact": "16px 20px",
+        "gap": "12px"
+      },
+      "grid": {
+        "gutter": "16px",
+        "outerPadding": "24px"
+      }
+    },
+
+    "borderRadius": {
+      "description": "Consistently rounded. Cards are softly rounded. Buttons and badges are pill-like or moderately rounded.",
+      "none": "0px",
+      "sm": "6px",
+      "md": "12px",
+      "lg": "20px",
+      "xl": "24px",
+      "card": "20px",
+      "button": "12px",
+      "badge": "6px",
+      "icon": "50%",
+      "iconContainer": "12px"
+    },
+
+    "shadows": {
+      "description": "Very subtle. Cards barely lift off the canvas — shadow is more about soft separation than dramatic depth.",
+      "card": "0 2px 12px rgba(0, 0, 0, 0.06)",
+      "cardHover": "0 6px 24px rgba(0, 0, 0, 0.10)",
+      "button": "0 2px 8px rgba(74, 103, 65, 0.25)",
+      "none": "none"
+    },
+
+    "layout": {
+      "description": "Full-page dashboard layout. Fixed narrow sidebar on the left, top header bar, main content area in a responsive multi-column grid.",
+      "structure": "sidebar + header + main-grid",
+      "sidebar": {
+        "width": "72px",
+        "style": "icon-only, vertically centered nav icons",
+        "background": "colorPalette.sidebar.background",
+        "position": "fixed left",
+        "activeIndicator": "filled dark circle behind icon"
+      },
+      "header": {
+        "height": "72px",
+        "content": ["greeting + subtitle (left)", "search bar (center)", "icon buttons (right)"],
+        "background": "canvas (no card background, merges with page)"
+      },
+      "mainGrid": {
+        "type": "CSS Grid",
+        "columns": 3,
+        "rows": "auto",
+        "gap": "16px",
+        "cardSpanning": {
+          "description": "Cards span multiple columns for hierarchy. Stat cards are 1-col, charts/features are 2-col or full-width.",
+          "examples": [
+            "stat card: 1 col × 1 row",
+            "activity card (accented): 1 col × 1 row",
+            "balance chart: 2 col × 1 row",
+            "credit card feature: 2 col × 1 row",
+            "transfers list: 1 col × 1 row"
+          ]
+        }
+      }
+    },
+
+    "components": {
+      "card": {
+        "background": "#FFFFFF",
+        "borderRadius": "20px",
+        "padding": "24px",
+        "shadow": "shadows.card",
+        "border": "none",
+        "variants": {
+          "default": {
+            "background": "#FFFFFF"
+          },
+          "accent": {
+            "background": "colorPalette.accent.primary",
+            "color": "#FFFFFF",
+            "description": "Used for 1–2 hero stat cards to create visual anchor points in the grid"
+          },
+          "ghost": {
+            "background": "colorPalette.background.cardAlt",
+            "shadow": "none"
+          }
+        }
+      },
+
+      "statCard": {
+        "description": "Small KPI card with icon, label, and large number. Sometimes includes a mini sparkline or bar chart inline.",
+        "structure": ["icon (top-left or inline)", "label text", "large numeric value", "optional: mini chart or trend badge"],
+        "iconStyle": {
+          "container": "soft circle, filled with accent.primaryGhost",
+          "size": "36px",
+          "iconSize": "18px",
+          "color": "accent.primary"
+        },
+        "trendBadge": {
+          "positive": {
+            "background": "semantic.positiveBackground",
+            "color": "semantic.positive",
+            "prefix": "+"
+          },
+          "negative": {
+            "background": "semantic.negativeBackground",
+            "color": "semantic.negative",
+            "prefix": "-"
+          }
+        }
+      },
+
+      "button": {
+        "primary": {
+          "background": "accent.primary",
+          "color": "#FFFFFF",
+          "borderRadius": "12px",
+          "padding": "10px 20px",
+          "fontSize": "13px",
+          "fontWeight": 600,
+          "border": "none",
+          "shadow": "shadows.button"
+        },
+        "ghost": {
+          "background": "transparent",
+          "color": "text.body",
+          "border": "1px solid #DDDDDD",
+          "borderRadius": "12px",
+          "padding": "10px 20px"
+        }
+      },
+
+      "badge": {
+        "borderRadius": "6px",
+        "padding": "2px 8px",
+        "fontSize": "11px",
+        "fontWeight": 600,
+        "variants": {
+          "positive": {
+            "background": "semantic.positiveBackground",
+            "color": "semantic.positive"
+          },
+          "negative": {
+            "background": "semantic.negativeBackground",
+            "color": "semantic.negative"
+          }
+        }
+      },
+
+      "searchBar": {
+        "background": "#FFFFFF",
+        "borderRadius": "12px",
+        "border": "none",
+        "shadow": "shadows.card",
+        "padding": "10px 16px",
+        "placeholderColor": "text.label",
+        "iconButton": {
+          "background": "#1A1A1A",
+          "color": "#FFFFFF",
+          "borderRadius": "10px",
+          "size": "36px"
+        }
+      },
+
+      "avatar": {
+        "shape": "circle",
+        "size": {
+          "sm": "32px",
+          "md": "48px",
+          "lg": "64px"
+        },
+        "border": "none",
+        "background": "accent.primaryGhost"
+      },
+
+      "listRow": {
+        "description": "Used in transfer lists. Each row has a left accent bar, main content (name + time), and a right badge.",
+        "padding": "10px 0",
+        "divider": "none (whitespace separates rows)",
+        "leftAccent": {
+          "width": "3px",
+          "borderRadius": "2px",
+          "color": "accent.primaryLight",
+          "height": "100%"
+        },
+        "layout": "flex row, space-between, vertically centered"
+      },
+
+      "progressArc": {
+        "description": "Semi-circular gauge/donut for percentage metrics.",
+        "trackColor": "accent.primaryGhost",
+        "fillColor": "accent.primary",
+        "labelPosition": "center bottom of arc",
+        "labelSize": "28px",
+        "labelWeight": 700
+      },
+
+      "miniChart": {
+        "line": {
+          "color": "accent.primaryMid",
+          "strokeWidth": 2,
+          "fill": "none or very light gradient below line",
+          "style": "smooth curve (cubic bezier)"
+        },
+        "bar": {
+          "color": "accent.primary",
+          "borderRadius": "3px",
+          "gap": "3px",
+          "width": "6px"
+        }
+      },
+
+      "sidebarIcon": {
+        "size": "20px",
+        "color": {
+          "default": "sidebar.iconDefault",
+          "active": "sidebar.iconActive"
+        },
+        "activeBackground": {
+          "shape": "circle",
+          "size": "40px",
+          "background": "sidebar.iconActiveBackground"
+        },
+        "spacing": "20px between icons"
+      },
+
+      "sectionDropdown": {
+        "description": "Inline filter/toggle, e.g. 'Monthly ▾', appears in card headers",
+        "style": "text button, no border",
+        "color": "text.muted",
+        "fontSize": "12px",
+        "fontWeight": 500
+      }
+    },
+
+    "dataVisualization": {
+      "colorOrder": [
+        "accent.primary",
+        "accent.primaryMid",
+        "accent.primaryLight",
+        "accent.primaryGhost"
+      ],
+      "chartBackground": "transparent",
+      "gridLines": "none or extremely faint (#F0F0EE)",
+      "axisLabels": {
+        "color": "text.label",
+        "fontSize": "11px"
+      },
+      "tooltips": {
+        "background": "#FFFFFF",
+        "borderRadius": "10px",
+        "shadow": "shadows.card",
+        "fontSize": "12px"
+      }
+    },
+
+    "motionAndInteraction": {
+      "description": "Subtle and functional. No flashy animations. Hover states use gentle shadow lifts and opacity shifts.",
+      "hoverCard": {
+        "transform": "translateY(-2px)",
+        "shadow": "shadows.cardHover",
+        "transition": "all 0.2s ease"
+      },
+      "hoverButton": {
+        "filter": "brightness(1.08)",
+        "transition": "all 0.15s ease"
+      },
+      "focusRing": {
+        "color": "accent.primary",
+        "width": "2px",
+        "offset": "2px"
+      }
+    },
+
+    "designPrinciples": [
+      "Warm neutrals first — the canvas and cards are never cold white or harsh grey",
+      "One accent color — sage green is used exclusively for interactive elements, positive states, and data visualization",
+      "Hierarchy through size, not color — KPI values are large and bold; labels are small and muted",
+      "Cards as containers — all content lives inside softly rounded white cards on the off-white canvas",
+      "Icon-only sidebar — navigation is minimal, never labeled, relies on icon recognition",
+      "Accent cards for emphasis — 1–2 cards per view use the dark green filled background to anchor attention",
+      "Data is calm — no red alerts by default; negative values use a muted red badge, not alarming full card states",
+      "Generous whitespace — padding inside cards is 24px minimum; content never feels cramped",
+      "Consistent radius — 20px on all cards, 12px on buttons, 6px on badges — never mixing styles",
+      "Typography is structural — font weight (not color) communicates importance; labels are always lighter than values"
+    ],
+
+    "cssVariablesTemplate": {
+      "description": "Drop these into :root {} to bootstrap the system in any CSS project.",
+      "variables": {
+        "--color-canvas": "#ECEAE4",
+        "--color-card": "#FFFFFF",
+        "--color-card-alt": "#F5F4F0",
+        "--color-accent": "#4A6741",
+        "--color-accent-mid": "#6A8F67",
+        "--color-accent-light": "#A8C0A5",
+        "--color-accent-ghost": "#E8EFE7",
+        "--color-text-heading": "#1A1A1A",
+        "--color-text-body": "#3A3A3A",
+        "--color-text-muted": "#8A8A8A",
+        "--color-text-label": "#B0B0B0",
+        "--color-text-on-dark": "#FFFFFF",
+        "--color-positive": "#4A6741",
+        "--color-positive-bg": "#E8EFE7",
+        "--color-negative": "#C0392B",
+        "--color-negative-bg": "#FDECEA",
+        "--radius-card": "20px",
+        "--radius-button": "12px",
+        "--radius-badge": "6px",
+        "--radius-icon": "50%",
+        "--shadow-card": "0 2px 12px rgba(0,0,0,0.06)",
+        "--shadow-card-hover": "0 6px 24px rgba(0,0,0,0.10)",
+        "--shadow-button": "0 2px 8px rgba(74,103,65,0.25)",
+        "--spacing-card-pad": "24px",
+        "--spacing-grid-gap": "16px",
+        "--font-family": "'Inter', 'DM Sans', sans-serif",
+        "--font-size-label": "12px",
+        "--font-size-body": "14px",
+        "--font-size-kpi": "32px",
+        "--font-weight-regular": "400",
+        "--font-weight-semibold": "600",
+        "--font-weight-bold": "700",
+        "--sidebar-width": "72px"
+      }
+    }
+  }
+}

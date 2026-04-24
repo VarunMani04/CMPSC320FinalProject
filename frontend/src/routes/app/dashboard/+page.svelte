@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Overview · Student Skill Gap Analyzer</title>
+	<title>Overview · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -22,15 +22,11 @@
 
 <div class="mx-auto max-w-3xl">
 	<h1 class="page-title">Overview</h1>
-	<p class="page-sub">Your checklist from profile to roadmap—small steps, visible progress.</p>
 
 	<section class="mt-8 rounded-card bg-sage p-6 text-white shadow-sagebtn sm:p-8">
 		<p class="text-[12px] font-normal text-white/85">Progress</p>
 		<p class="mt-1 text-kpi font-bold text-white">
 			{doneCount}<span class="text-[20px] font-semibold text-white/75">/4</span>
-		</p>
-		<p class="mt-2 max-w-md text-[12px] leading-relaxed text-white/90">
-			Complete each step in order when you can—nothing here is urgent, just structured.
 		</p>
 	</section>
 

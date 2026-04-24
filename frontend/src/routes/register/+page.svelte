@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Register · Student Skill Gap Analyzer</title>
+	<title>Register · PostingPal</title>
 </svelte:head>
 
 <script lang="ts">
@@ -14,16 +14,35 @@
 		e.preventDefault();
 		error = null;
 		loading = true;
-		const res = await fetch("/api/auth/register", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email, password })
-		});
+		let res: Response;
+		try {
+			res = await fetch("/api/auth/register", {
+				method: "POST",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: email.trim(), password })
+			});
+		} catch {
+			loading = false;
+			error =
+				"Could not reach the API. Start the Flask backend (port 5000) or check your dev proxy.";
+			return;
+		}
 		loading = false;
 		if (!res.ok) {
-			const b = await res.json().catch(() => ({}));
-			error = (b as { error?: string }).error || "Could not register";
+			const text = await res.text().catch(() => "");
+			let msg = `Could not register (HTTP ${res.status})`;
+			try {
+				const b = JSON.parse(text) as { error?: string };
+				if (b.error) msg = b.error;
+			} catch {
+				if (text.trim()) msg = text.trim().slice(0, 200);
+			}
+			if (res.status === 403) {
+				msg +=
+					" The app proxies /api to Flask (see hooks.server.ts). Use `npm run dev` with Flask on :5000, or set API_ORIGIN if your API lives elsewhere.";
+			}
+			error = msg;
 			return;
 		}
 		await goto("/app/profile");
@@ -33,7 +52,6 @@
 <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-12">
 	<a class="text-[12px] text-ink-muted transition hover:text-ink-body" href="/">← Back home</a>
 	<h1 class="page-title mt-6">Create your account</h1>
-	<p class="page-sub">Takes a minute—then you’ll set up your student profile.</p>
 
 	<form class="card mt-8 space-y-5 shadow-card" onsubmit={submit}>
 		<div>
@@ -60,8 +78,8 @@
 			{loading ? "Creating…" : "Create account"}
 		</button>
 	</form>
-	<p class="mt-8 text-center text-[12px] text-ink-muted">
-		Already have an account?
-		<a class="link-quiet" href="/login">Log in</a>
+	<p class="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-[12px] text-ink-muted">
+		<span>Already have an account?</span>
+		<a class="btn-white shrink-0 px-4 py-2 text-[13px]" href="/login">Log in</a>
 	</p>
 </main>

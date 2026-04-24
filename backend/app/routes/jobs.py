@@ -58,7 +58,7 @@ def analyze_batch():
     JobPosting.query.filter_by(user_id=g.current_user.id).delete(synchronize_session=False)
     db.session.commit()
 
-    use_llm = llm_service._client() is not None  # noqa: SLF001
+    use_llm = llm_service.is_llm_available()
     results = []
     for raw in cleaned:
         job = JobPosting(user_id=g.current_user.id, raw_text=raw)
