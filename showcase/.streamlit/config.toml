@@ -3,3 +3,12 @@ headless = true
 
 [browser]
 gatherUsageStats = false
+
+# PostingPal / Sage dashboard (aligned with frontend tailwind tokens)
+[theme]
+primaryColor = "#4A6741"
+backgroundColor = "#ECEAE4"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1A1A1A"
+font = "sans serif"
+borderRadius = "12px"

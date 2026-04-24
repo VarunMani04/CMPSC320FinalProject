@@ -151,6 +151,94 @@ def profile_summary_block(profile: dict[str, str]) -> str:
     )
 
 
+def _postingpal_css() -> None:
+    """Match main PostingPal Svelte UI: canvas, sage primary, soft cards, Inter."""
+    st.markdown(
+        """
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .stApp, [data-testid="stAppViewContainer"] {
+    font-family: "Inter", system-ui, sans-serif !important;
+  }
+  .main .block-container {
+    max-width: 52rem;
+    padding-top: 1.75rem;
+    padding-bottom: 3rem;
+  }
+  h1, h2, h3 {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #1a1a1a !important;
+  }
+  [data-testid="stSidebar"] {
+    background-color: #f5f4f0 !important;
+    border-right: 1px solid #e8e6e0 !important;
+  }
+  [data-testid="stSidebar"] .stMarkdown a {
+    color: #4a6741 !important;
+  }
+  .stButton > button[kind="primary"] {
+    background-color: #4a6741 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(74, 103, 65, 0.25) !important;
+  }
+  .stButton > button[kind="primary"]:hover {
+    filter: brightness(1.06);
+  }
+  .stButton > button[kind="secondary"] {
+    border-radius: 12px !important;
+    border: 1px solid #dddddd !important;
+    background: transparent !important;
+    color: #3a3a3a !important;
+    font-weight: 600 !important;
+  }
+  .stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    background: #f5f4f0;
+    padding: 8px;
+    border-radius: 16px;
+    border: none;
+  }
+  .stTabs [data-baseweb="tab"] {
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 500;
+    color: #6a6a6a;
+  }
+  .stTabs [aria-selected="true"] {
+    background: #4a6741 !important;
+    color: #ffffff !important;
+  }
+  div[data-testid="stExpander"] {
+    background: #ffffff;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: none !important;
+  }
+  .stTextInput input, .stTextArea textarea {
+    border-radius: 12px !important;
+    border: none !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+    color: #3a3a3a !important;
+  }
+  div[data-testid="stAlert"] {
+    border-radius: 12px !important;
+  }
+  [data-testid="stHeader"] {
+    background: rgba(236, 234, 228, 0.92);
+    border-bottom: 1px solid #e0ddd6;
+  }
+</style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def init_state() -> None:
     defaults = {
         "profile": {
@@ -188,10 +276,10 @@ def main() -> None:
     key_from_env_or_secrets = _gemini_key_from_env_or_secrets()
 
     with st.sidebar:
-        st.subheader("Gemini API")
-        st.markdown(
-            "Use a **free** key from [Google AI Studio](https://aistudio.google.com/apikey). "
-            "On Streamlit Community Cloud, set secret **`GEMINI_API_KEY`** (recommended for QR demos)."
+        st.markdown("**Gemini**")
+        st.caption(
+            "Free key: [Google AI Studio](https://aistudio.google.com/apikey). "
+            "Cloud deploy: set secret `GEMINI_API_KEY`."
         )
         api_key = st.text_input(
             "API key (optional paste for local demo)",
@@ -213,7 +301,7 @@ def main() -> None:
     except OSError:
         st.warning("spaCy model missing. Run: `python -m spacy download en_core_web_sm`")
 
-    tabs = st.tabs(["1 · Profile", "2 · Job posting", "3 · Parse & NLP", "4 · Gap report", "5 · Roadmap"])
+    tabs = st.tabs(["Profile", "Job posting", "NLP hints", "Gap report", "Roadmap"])
 
     with tabs[0]:
         st.session_state.profile["full_name"] = st.text_input(
@@ -247,7 +335,7 @@ def main() -> None:
     with tabs[2]:
         text = st.session_state.jd_text.strip()
         if not text:
-            st.info("Add job text in tab **2 · Job posting**.")
+            st.info("Add job text in the **Job posting** tab.")
         else:
             if nlp:
                 hints = spacy_language_hints(text, nlp)
@@ -291,14 +379,15 @@ def main() -> None:
                     st.warning("No API key — heuristic parse only.")
 
             if st.session_state.parsed_job:
-                st.json(st.session_state.parsed_job)
+                with st.expander("Parsed structure (JSON)", expanded=False):
+                    st.json(st.session_state.parsed_job)
 
     with tabs[3]:
         prof = st.session_state.profile
         if not (prof.get("full_name") or "").strip():
-            st.warning("Enter at least a **full name** on tab 1.")
+            st.warning("Enter at least a **full name** on **Profile**.")
         elif not st.session_state.parsed_job:
-            st.warning("Parse a job description on tab 3 first.")
+            st.warning("Parse a job description in **NLP hints** first.")
         else:
             if st.button("Generate gap report", type="primary"):
                 profile_summary = profile_summary_block(prof)
@@ -346,7 +435,7 @@ def main() -> None:
     with tabs[4]:
         gr = st.session_state.gap_report
         if not gr:
-            st.warning("Generate a gap report on tab 4 first.")
+            st.warning("Generate a gap report first.")
         else:
             rows = gr.get("rows") or []
             gaps = [r.get("requirement") for r in rows if isinstance(r, dict) and r.get("match") == "gap"]

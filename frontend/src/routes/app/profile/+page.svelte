@@ -121,18 +121,17 @@
 <div class="mx-auto max-w-2xl">
 	<h1 class="page-title">Your profile</h1>
 		<p class="page-sub">This is what the gap analyzer compares to job postings.</p>
-		<p class="mt-2 max-w-xl text-[12px] leading-relaxed text-ink-muted">
-			Optional: upload a <strong class="text-ink-body">PDF résumé</strong> to pre-fill name, education, experience, and
-			skills. You can still edit everything before saving.
-		</p>
 
-		<div class="card mt-6 flex flex-col gap-3 border border-dashed border-ink-label/25 bg-card-alt/50 p-5 shadow-none sm:flex-row sm:items-center sm:justify-between">
-			<div>
-				<p class="text-[13px] font-bold text-ink">Fill from PDF résumé</p>
-				<p class="mt-1 text-[11px] text-ink-muted">PDF only, up to 4&nbsp;MB. Uses AI when an API key is configured.</p>
-			</div>
-			<div class="flex flex-wrap items-center gap-2">
-				<label class="btn-secondary cursor-pointer text-2xs">
+	{#if data.error}
+		<p class="mt-4 rounded-badge bg-negative-bg px-3 py-2 text-[12px] font-medium text-negative">{data.error}</p>
+	{:else}
+		<form class="card mt-8 space-y-5 shadow-card" onsubmit={save}>
+			<div class="rounded-btn bg-card-alt p-4">
+				<p class="label">Optional · PDF résumé</p>
+				<p class="mt-1 text-[12px] leading-relaxed text-ink-muted">
+					Upload a PDF (max 4&nbsp;MB) to pre-fill the fields below. Review and edit before saving.
+				</p>
+				<label class="btn-secondary mt-3 inline-flex cursor-pointer text-2xs">
 					{resumeParsing ? "Parsing…" : "Choose PDF"}
 					<input
 						key={resumeFileKey}
@@ -148,12 +147,7 @@
 					/>
 				</label>
 			</div>
-		</div>
 
-	{#if data.error}
-		<p class="mt-4 rounded-badge bg-negative-bg px-3 py-2 text-[12px] font-medium text-negative">{data.error}</p>
-	{:else}
-		<form class="card mt-8 space-y-5 shadow-card" onsubmit={save}>
 			<div>
 				<label class="label" for="full_name">Full name</label>
 				<input id="full_name" class="field" bind:value={full_name} required />
