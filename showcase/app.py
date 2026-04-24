@@ -113,23 +113,6 @@ def _inject_design_system_css(ds: dict[str, Any]) -> None:
     color: var(--color-text-body) !important;
     font-weight: var(--font-weight-semibold) !important;
   }}
-  .stTabs [data-baseweb="tab-list"] {{
-    gap: 8px;
-    background: var(--color-card-alt);
-    padding: 10px;
-    border-radius: var(--radius-card);
-    border: none;
-  }}
-  .stTabs [data-baseweb="tab"] {{
-    border-radius: var(--radius-button);
-    padding: 10px 18px;
-    font-weight: 500;
-    color: var(--color-text-muted);
-  }}
-  .stTabs [aria-selected="true"] {{
-    background: var(--color-accent) !important;
-    color: var(--color-text-on-dark) !important;
-  }}
   .stTextInput input, .stTextArea textarea {{
     border-radius: var(--radius-button) !important;
     border: none !important;
@@ -325,6 +308,280 @@ def _load_nlp():
     return spacy.load("en_core_web_sm")
 
 
+_WORKFLOW_STEPS: list[tuple[str, str, str]] = [
+    ("profile", "Profile", "Your background and skills"),
+    ("jobs", "Job postings", "Paste and analyze target roles"),
+    ("nlp", "Language hints", "spaCy signals from saved postings"),
+    ("gap", "Gap report", "Compare profile to requirements"),
+    ("roadmap", "Roadmap", "Learning milestones"),
+]
+
+
+def _workflow_init() -> None:
+    if "workflow_step" not in st.session_state:
+        st.session_state.workflow_step = 0
+
+
+def _workflow_render_sidebar_nav() -> None:
+    st.markdown("**Workflow**")
+    st.caption("Move through each step in order.")
+    step = int(st.session_state.workflow_step)
+    for i, (slug, title, sub) in enumerate(_WORKFLOW_STEPS):
+        label = f"{i + 1}. {title}"
+        is_here = i == step
+        if st.button(
+            label,
+            key=f"wf_nav_{slug}",
+            use_container_width=True,
+            type="primary" if is_here else "secondary",
+            help=sub,
+        ):
+            if i != step:
+                st.session_state.workflow_step = i
+                st.rerun()
+
+
+def _workflow_footer_nav() -> None:
+    step = int(st.session_state.workflow_step)
+    last = len(_WORKFLOW_STEPS) - 1
+    st.divider()
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c1:
+        if st.button("← Back", disabled=step <= 0, use_container_width=True):
+            st.session_state.workflow_step = max(0, step - 1)
+            st.rerun()
+    with c2:
+        slug, title, _sub = _WORKFLOW_STEPS[step]
+        st.caption(f"Step {step + 1} of {len(_WORKFLOW_STEPS)} · **{title}**")
+    with c3:
+        if step >= last:
+            if st.button("Finish", use_container_width=True):
+                st.session_state.workflow_step = 0
+                st.rerun()
+        else:
+            if st.button("Continue →", type="primary", use_container_width=True):
+                st.session_state.workflow_step = min(last, step + 1)
+                st.rerun()
+
+
+def _page_profile(http: requests.Session) -> None:
+    st.markdown("### Profile")
+    st.caption("This data is saved to your PostingPal account when you click Save.")
+    st.session_state.pf_name = st.text_input("Full name", value=st.session_state.get("pf_name", ""))
+    st.session_state.pf_edu = st.text_area("Education", value=st.session_state.get("pf_edu", ""), height=100)
+    st.session_state.pf_exp = st.text_area(
+        "Experience and projects", value=st.session_state.get("pf_exp", ""), height=140
+    )
+    st.markdown("#### Skills")
+    st.session_state.pf_skills_df = st.data_editor(
+        st.session_state.pf_skills_df,
+        column_config={
+            "name": st.column_config.TextColumn("Skill", required=True),
+            "proficiency": st.column_config.SelectColumn(
+                "Level",
+                options=["beginner", "intermediate", "advanced"],
+                required=True,
+            ),
+        },
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+    )
+    up = st.file_uploader("Import from PDF résumé (optional)", type=["pdf"])
+    if up is not None and st.button("Extract into form", type="secondary"):
+        try:
+            files = {"file": (up.name, up.getvalue(), "application/pdf")}
+            pr = http.post(f"{_api_base()}/api/profile/parse-resume", files=files, timeout=120)
+        except requests.RequestException as exc:
+            st.error(f"Request failed: {exc!s}")
+            pr = None
+        if pr is not None:
+            if pr.status_code != 200:
+                try:
+                    st.error(pr.json().get("error", pr.text))
+                except Exception:
+                    st.error(pr.text)
+            else:
+                data = pr.json()
+                if data.get("full_name"):
+                    st.session_state.pf_name = data["full_name"]
+                if data.get("education"):
+                    st.session_state.pf_edu = data["education"]
+                if data.get("experience"):
+                    st.session_state.pf_exp = data["experience"]
+                sk = data.get("skills") or []
+                rows = [
+                    {"name": s.get("name", ""), "proficiency": s.get("proficiency", "beginner")}
+                    for s in sk
+                    if isinstance(s, dict) and (s.get("name") or "").strip()
+                ]
+                st.session_state.pf_skills_df = pd.DataFrame(
+                    rows if rows else [{"name": "", "proficiency": "beginner"}]
+                )
+                st.success("Extracted — review fields, then save.")
+                st.rerun()
+    if st.button("Save profile", type="primary"):
+        _save_profile(http)
+    if st.button("Reload from server", type="secondary"):
+        _load_profile_into_editor(http)
+        st.rerun()
+
+
+def _page_jobs(http: requests.Session) -> None:
+    st.markdown("### Job postings")
+    st.caption("Separate multiple postings with a line containing only ---")
+    jd = st.text_area("Job description text", height=260, key="jd_batch")
+    if st.button("Analyze and save to account", type="primary"):
+        parts = [p.strip() for p in jd.split("---") if p.strip()]
+        if not parts:
+            st.warning("Paste at least one job description.")
+        else:
+            try:
+                r = http.post(f"{_api_base()}/api/jobs/analyze", json={"postings": parts}, timeout=180)
+            except requests.RequestException as exc:
+                st.error(f"Request failed: {exc!s}")
+                r = None
+            if r is not None:
+                if r.status_code != 201:
+                    try:
+                        st.error(r.json().get("error", r.text))
+                    except Exception:
+                        st.error(r.text)
+                else:
+                    st.success("Job postings analyzed and stored.")
+    try:
+        lr = http.get(f"{_api_base()}/api/jobs", timeout=30)
+        if lr.status_code == 200:
+            jobs = lr.json().get("jobs") or []
+            st.caption(f"{len(jobs)} posting(s) on file.")
+            if jobs:
+                with st.expander("Latest parsed summary"):
+                    st.json(jobs[0].get("parsed") or {})
+    except requests.RequestException:
+        pass
+
+
+def _page_nlp(http: requests.Session) -> None:
+    st.markdown("### Language hints")
+    st.caption("spaCy analysis of your most recent saved job posting.")
+    try:
+        jr = http.get(f"{_api_base()}/api/jobs", timeout=30)
+        raw = ""
+        if jr.status_code == 200:
+            jobs = jr.json().get("jobs") or []
+            if jobs:
+                raw = jobs[0].get("raw_text") or ""
+    except requests.RequestException:
+        raw = ""
+    if not raw.strip():
+        st.info("Complete **Job postings** first, then return here.")
+    else:
+        try:
+            nlp = _load_nlp()
+        except OSError:
+            st.warning("spaCy model not installed.")
+            nlp = None
+        if nlp:
+            hints = _spacy_hints(raw, nlp)
+            a, b, c = st.columns(3)
+            with a:
+                st.markdown("**Noun chunks**")
+                st.write(hints["noun_chunks"] or ["—"])
+            with b:
+                st.markdown("**Entities**")
+                st.write(hints["entities"] or ["—"])
+            with c:
+                st.markdown("**Top lemmas**")
+                st.write(hints["lemmas_top"] or ["—"])
+
+
+def _page_gap(http: requests.Session) -> None:
+    st.markdown("### Gap report")
+    st.caption("Uses your saved profile and job postings on the server.")
+    if st.button("Generate gap report", type="primary"):
+        try:
+            r = http.post(f"{_api_base()}/api/gap-reports/generate", timeout=180)
+        except requests.RequestException as exc:
+            st.error(f"Request failed: {exc!s}")
+            r = None
+        if r is not None:
+            if r.status_code != 201:
+                try:
+                    st.error(r.json().get("error", r.text))
+                except Exception:
+                    st.error(r.text)
+            else:
+                st.success("Gap report generated.")
+    try:
+        gr = http.get(f"{_api_base()}/api/gap-reports/latest", timeout=30)
+        if gr.status_code == 200:
+            rep = gr.json().get("report")
+            if rep:
+                st.markdown(f"**Summary**  \n{rep.get('summary', '')}")
+                rows = rep.get("rows") or []
+                if rows:
+                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            else:
+                st.caption("No report yet.")
+    except requests.RequestException:
+        st.caption("Could not load latest report.")
+
+
+def _page_roadmap(http: requests.Session) -> None:
+    st.markdown("### Roadmap")
+    st.caption("Built from your latest gap report.")
+    if st.button("Generate roadmap", type="primary"):
+        try:
+            r = http.post(f"{_api_base()}/api/roadmap/generate", timeout=180)
+        except requests.RequestException as exc:
+            st.error(f"Request failed: {exc!s}")
+            r = None
+        if r is not None and r.status_code != 201:
+            try:
+                st.error(r.json().get("error", r.text))
+            except Exception:
+                st.error(r.text)
+        elif r is not None:
+            st.success("Roadmap updated.")
+    try:
+        rr = http.get(f"{_api_base()}/api/roadmap", timeout=30)
+        if rr.status_code == 200:
+            rm = rr.json().get("roadmap")
+            if rm and rm.get("milestones"):
+                st.markdown(rm.get("intro", ""))
+                for m in rm["milestones"]:
+                    if not isinstance(m, dict):
+                        continue
+                    mid = m.get("id", "")
+                    title = m.get("title", "Milestone")
+                    done = bool(m.get("completed"))
+                    with st.expander(f"{'✓ ' if done else ''}{title}"):
+                        st.write(m.get("description", ""))
+                        if m.get("resource_url"):
+                            st.link_button("Resource", m["resource_url"])
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            if not done and st.button("Mark complete", key=f"done_{mid}"):
+                                http.patch(
+                                    f"{_api_base()}/api/roadmap/milestones/{mid}",
+                                    json={"completed": True},
+                                    timeout=30,
+                                )
+                                st.rerun()
+                        with c2:
+                            if done and st.button("Mark incomplete", key=f"undone_{mid}"):
+                                http.patch(
+                                    f"{_api_base()}/api/roadmap/milestones/{mid}",
+                                    json={"completed": False},
+                                    timeout=30,
+                                )
+                                st.rerun()
+            else:
+                st.caption("No roadmap yet.")
+    except requests.RequestException:
+        st.caption("Could not load roadmap.")
+
+
 def _spacy_hints(text: str, nlp) -> dict[str, Any]:
     if not text.strip():
         return {"noun_chunks": [], "entities": [], "lemmas_top": []}
@@ -341,6 +598,7 @@ def _spacy_hints(text: str, nlp) -> dict[str, Any]:
 
 def _main_logged_in(ds: dict[str, Any], user: dict[str, Any]) -> None:
     _inject_design_system_css(ds)
+    _workflow_init()
     http = _http()
 
     uid = user.get("id")
@@ -359,223 +617,31 @@ def _main_logged_in(ds: dict[str, Any], user: dict[str, Any]) -> None:
             _reset_http()
             st.session_state.pop("pf_skills_df", None)
             st.session_state.pop("profile_uid_cached", None)
+            st.session_state.pop("workflow_step", None)
             st.rerun()
         st.divider()
-        st.caption("Backend session is shared with this console only on this machine.")
+        _workflow_render_sidebar_nav()
+        st.divider()
+        st.caption("Session is held in this browser run only.")
 
     _render_brand_header()
-    st.caption("Manage your profile, job postings, gap analysis, and roadmap against your live PostingPal account.")
+    st.caption("Follow the workflow: profile → jobs → language review → gap analysis → roadmap.")
 
-    tabs = st.tabs(["Profile", "Job postings", "Language hints", "Gap report", "Roadmap"])
-
-    with tabs[0]:
-        st.markdown("##### Profile")
-        st.session_state.pf_name = st.text_input("Full name", value=st.session_state.get("pf_name", ""))
-        st.session_state.pf_edu = st.text_area("Education", value=st.session_state.get("pf_edu", ""), height=100)
-        st.session_state.pf_exp = st.text_area(
-            "Experience and projects", value=st.session_state.get("pf_exp", ""), height=140
-        )
-        st.markdown("###### Skills")
-        st.session_state.pf_skills_df = st.data_editor(
-            st.session_state.pf_skills_df,
-            column_config={
-                "name": st.column_config.TextColumn("Skill", required=True),
-                "proficiency": st.column_config.SelectColumn(
-                    "Level",
-                    options=["beginner", "intermediate", "advanced"],
-                    required=True,
-                ),
-            },
-            num_rows="dynamic",
-            use_container_width=True,
-            hide_index=True,
-        )
-        up = st.file_uploader("Import from PDF résumé (optional)", type=["pdf"])
-        if up is not None and st.button("Extract into form", type="secondary"):
-            try:
-                files = {"file": (up.name, up.getvalue(), "application/pdf")}
-                pr = http.post(f"{_api_base()}/api/profile/parse-resume", files=files, timeout=120)
-            except requests.RequestException as exc:
-                st.error(f"Request failed: {exc!s}")
-                pr = None
-            if pr is not None:
-                if pr.status_code != 200:
-                    try:
-                        st.error(pr.json().get("error", pr.text))
-                    except Exception:
-                        st.error(pr.text)
-                else:
-                    data = pr.json()
-                    if data.get("full_name"):
-                        st.session_state.pf_name = data["full_name"]
-                    if data.get("education"):
-                        st.session_state.pf_edu = data["education"]
-                    if data.get("experience"):
-                        st.session_state.pf_exp = data["experience"]
-                    sk = data.get("skills") or []
-                    rows = [
-                        {"name": s.get("name", ""), "proficiency": s.get("proficiency", "beginner")}
-                        for s in sk
-                        if isinstance(s, dict) and (s.get("name") or "").strip()
-                    ]
-                    st.session_state.pf_skills_df = pd.DataFrame(
-                        rows if rows else [{"name": "", "proficiency": "beginner"}]
-                    )
-                    st.success("Extracted — review fields, then save.")
-                    st.rerun()
-        if st.button("Save profile", type="primary"):
-            _save_profile(http)
-        if st.button("Reload profile from server", type="secondary"):
-            _load_profile_into_editor(http)
-            st.rerun()
-
-    with tabs[1]:
-        st.markdown("##### Job postings")
-        st.caption("Separate multiple postings with a line containing only ---")
-        jd = st.text_area("Job description text", height=260, key="jd_batch")
-        if st.button("Analyze and save to account", type="primary"):
-            parts = [p.strip() for p in jd.split("---") if p.strip()]
-            if not parts:
-                st.warning("Paste at least one job description.")
-            else:
-                try:
-                    r = http.post(f"{_api_base()}/api/jobs/analyze", json={"postings": parts}, timeout=180)
-                except requests.RequestException as exc:
-                    st.error(f"Request failed: {exc!s}")
-                    r = None
-                if r is not None:
-                    if r.status_code != 201:
-                        try:
-                            st.error(r.json().get("error", r.text))
-                        except Exception:
-                            st.error(r.text)
-                    else:
-                        st.success("Job postings analyzed and stored.")
-        try:
-            lr = http.get(f"{_api_base()}/api/jobs", timeout=30)
-            if lr.status_code == 200:
-                jobs = lr.json().get("jobs") or []
-                st.caption(f"{len(jobs)} posting(s) on file.")
-                if jobs:
-                    with st.expander("Latest parsed summary"):
-                        st.json(jobs[0].get("parsed") or {})
-        except requests.RequestException:
-            pass
-
-    with tabs[2]:
-        st.markdown("##### Language hints (spaCy)")
-        try:
-            jr = http.get(f"{_api_base()}/api/jobs", timeout=30)
-            raw = ""
-            if jr.status_code == 200:
-                jobs = jr.json().get("jobs") or []
-                if jobs:
-                    raw = jobs[0].get("raw_text") or ""
-        except requests.RequestException:
-            raw = ""
-        if not raw.strip():
-            st.info("Analyze a job posting first to enable linguistic hints from its text.")
+    step = int(st.session_state.workflow_step)
+    slug = _WORKFLOW_STEPS[step][0]
+    with st.container():
+        if slug == "profile":
+            _page_profile(http)
+        elif slug == "jobs":
+            _page_jobs(http)
+        elif slug == "nlp":
+            _page_nlp(http)
+        elif slug == "gap":
+            _page_gap(http)
         else:
-            try:
-                nlp = _load_nlp()
-            except OSError:
-                st.warning("spaCy model not installed.")
-                nlp = None
-            if nlp:
-                hints = _spacy_hints(raw, nlp)
-                a, b, c = st.columns(3)
-                with a:
-                    st.markdown("**Noun chunks**")
-                    st.write(hints["noun_chunks"] or ["—"])
-                with b:
-                    st.markdown("**Entities**")
-                    st.write(hints["entities"] or ["—"])
-                with c:
-                    st.markdown("**Top lemmas**")
-                    st.write(hints["lemmas_top"] or ["—"])
+            _page_roadmap(http)
 
-    with tabs[3]:
-        st.markdown("##### Gap report")
-        if st.button("Generate gap report", type="primary"):
-            try:
-                r = http.post(f"{_api_base()}/api/gap-reports/generate", timeout=180)
-            except requests.RequestException as exc:
-                st.error(f"Request failed: {exc!s}")
-                r = None
-            if r is not None:
-                if r.status_code != 201:
-                    try:
-                        st.error(r.json().get("error", r.text))
-                    except Exception:
-                        st.error(r.text)
-                else:
-                    st.success("Gap report generated.")
-        try:
-            gr = http.get(f"{_api_base()}/api/gap-reports/latest", timeout=30)
-            if gr.status_code == 200:
-                rep = gr.json().get("report")
-                if rep:
-                    st.markdown(f"**Summary**  \n{rep.get('summary', '')}")
-                    rows = rep.get("rows") or []
-                    if rows:
-                        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-                else:
-                    st.caption("No report yet.")
-        except requests.RequestException:
-            st.caption("Could not load latest report.")
-
-    with tabs[4]:
-        st.markdown("##### Roadmap")
-        if st.button("Generate roadmap from latest gap report", type="primary"):
-            try:
-                r = http.post(f"{_api_base()}/api/roadmap/generate", timeout=180)
-            except requests.RequestException as exc:
-                st.error(f"Request failed: {exc!s}")
-                r = None
-            if r is not None and r.status_code != 201:
-                try:
-                    st.error(r.json().get("error", r.text))
-                except Exception:
-                    st.error(r.text)
-            elif r is not None:
-                st.success("Roadmap updated.")
-        try:
-            rr = http.get(f"{_api_base()}/api/roadmap", timeout=30)
-            if rr.status_code == 200:
-                rm = rr.json().get("roadmap")
-                if rm and rm.get("milestones"):
-                    st.markdown(rm.get("intro", ""))
-                    for m in rm["milestones"]:
-                        if not isinstance(m, dict):
-                            continue
-                        mid = m.get("id", "")
-                        title = m.get("title", "Milestone")
-                        done = bool(m.get("completed"))
-                        with st.expander(f"{'✓ ' if done else ''}{title}"):
-                            st.write(m.get("description", ""))
-                            if m.get("resource_url"):
-                                st.link_button("Resource", m["resource_url"])
-                            c1, c2 = st.columns(2)
-                            with c1:
-                                if not done and st.button("Mark complete", key=f"done_{mid}"):
-                                    http.patch(
-                                        f"{_api_base()}/api/roadmap/milestones/{mid}",
-                                        json={"completed": True},
-                                        timeout=30,
-                                    )
-                                    st.rerun()
-                            with c2:
-                                if done and st.button("Mark incomplete", key=f"undone_{mid}"):
-                                    http.patch(
-                                        f"{_api_base()}/api/roadmap/milestones/{mid}",
-                                        json={"completed": False},
-                                        timeout=30,
-                                    )
-                                    st.rerun()
-                else:
-                    st.caption("No roadmap yet.")
-        except requests.RequestException:
-            st.caption("Could not load roadmap.")
+    _workflow_footer_nav()
 
 
 def main() -> None:

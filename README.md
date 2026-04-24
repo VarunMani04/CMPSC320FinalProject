@@ -60,7 +60,7 @@ Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session coo
 
 ## Streamlit console (`showcase/`)
 
-Alternate **PostingPal** UI that talks to the **same Flask API** (email + password sign-in, profile, job analyze, gap report, roadmap). Styling is driven by **`showcase/design-system.json`** (Sage Dashboard tokens from your design system). **spaCy** powers the **Language hints** tab on job text already stored on the server.
+Alternate **PostingPal** UI that talks to the **same Flask API** (email + password sign-in, then a **step-by-step workflow**: profile → job postings → language hints → gap report → roadmap). Styling is driven by **`showcase/design-system.json`**. **spaCy** powers **Language hints** from job text already stored on the server.
 
 **Prerequisites:** run the Flask backend (`python wsgi.py` from `backend/`, default `http://127.0.0.1:5000`).
 
