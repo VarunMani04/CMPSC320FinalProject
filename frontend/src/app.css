@@ -49,6 +49,9 @@
 	.btn-secondary {
 		@apply btn border border-[#DDDDDD] bg-transparent text-ink-body hover:bg-card-alt;
 	}
+	.btn-white {
+		@apply btn border border-black/10 bg-white text-ink shadow-card hover:bg-[#fafafa] active:bg-[#f3f3f3];
+	}
 	.btn-ghost {
 		@apply btn text-ink-body hover:bg-card-alt;
 	}
