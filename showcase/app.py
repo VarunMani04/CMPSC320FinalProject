@@ -178,85 +178,169 @@ def _render_brand_header() -> None:
     )
 
 
-def _render_auth(ds: dict[str, Any]) -> None:
+def _render_auth_landing(ds: dict[str, Any]) -> None:
+    """Match SvelteKit home: tagline, hero, CTAs, three workflow cards."""
     _inject_design_system_css(ds)
-    panel = st.session_state.get("auth_panel", "login")
+    st.caption("Career info you can trust")
+    left, right = st.columns([2, 1])
+    with left:
+        st.markdown(
+            '<h1 style="font-size:2.1rem;font-weight:700;letter-spacing:-0.03em;color:#1a1a1a;margin:0.25rem 0 0 0;">PostingPal</h1>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<p style="font-size:13px;line-height:1.65;color:#3a3a3a;margin-top:12px;max-width:28rem;">'
+            "Paste real job descriptions, and get tailored advice you can follow."
+            "</p>",
+            unsafe_allow_html=True,
+        )
+    with right:
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("Create account", type="primary", use_container_width=True):
+            st.session_state.auth_panel = "register"
+            st.rerun()
+        if st.button("Log in", type="secondary", use_container_width=True):
+            st.session_state.auth_panel = "login"
+            st.rerun()
+
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    cards = [
+        ("1", "Profile", "Your experience and credentials in one place"),
+        ("2", "Job Posts", "One or many postings, parsed and saved together."),
+        ("3", "Gap Analyzer", "See how you line up against your dream roles."),
+    ]
+    for col, (num, title, body) in zip((c1, c2, c3), cards):
+        with col:
+            st.markdown(
+                f"""
+<div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);min-height:168px;">
+  <div style="width:40px;height:40px;border-radius:12px;background:#E8EFE7;color:#4A6741;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin-bottom:14px;">{num}</div>
+  <div style="font-size:16px;font-weight:700;color:#1a1a1a;">{title}</div>
+  <p style="font-size:12px;color:#8a8a8a;margin-top:8px;line-height:1.6;">{body}</p>
+</div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    with st.expander("API connection", expanded=False):
+        st.caption(f"Backend: `{_api_base()}` — set `API_BASE_URL` in `showcase/.env` if needed.")
+
+
+def _render_auth_login(ds: dict[str, Any]) -> None:
+    _inject_design_system_css(ds)
     _, c, _ = st.columns([1, 2, 1])
     with c:
-        _render_brand_header()
-        st.caption(
-            f"API: `{_api_base()}` · Set `API_BASE_URL` in `showcase/.env` if your backend runs elsewhere."
+        if st.button("← Back home"):
+            st.session_state.auth_panel = "landing"
+            st.rerun()
+        st.markdown(
+            '<h1 class="page-title" style="font-size:1.5rem;font-weight:700;margin-top:1.25rem;color:#1a1a1a;">Welcome back</h1>',
+            unsafe_allow_html=True,
         )
+        with st.form("signin_form"):
+            st.markdown('<span style="font-size:12px;color:#8a8a8a;">Email</span>', unsafe_allow_html=True)
+            email = st.text_input("Email", key="login_email", label_visibility="collapsed", autocomplete="email")
+            st.markdown('<span style="font-size:12px;color:#8a8a8a;">Password</span>', unsafe_allow_html=True)
+            password = st.text_input(
+                "Password",
+                type="password",
+                key="login_pw",
+                label_visibility="collapsed",
+                autocomplete="current-password",
+            )
+            submitted = st.form_submit_button("Log in", type="primary", use_container_width=True)
+            if submitted:
+                if not email.strip() or not password:
+                    st.error("Enter email and password.")
+                else:
+                    http = _http()
+                    try:
+                        r = http.post(
+                            f"{_api_base()}/api/auth/login",
+                            json={"email": email.strip().lower(), "password": password},
+                            timeout=60,
+                        )
+                    except requests.RequestException as exc:
+                        st.error(f"Cannot reach API: {exc!s}. Is the Flask server running?")
+                        r = None
+                    if r is not None:
+                        if r.status_code == 200:
+                            st.rerun()
+                        else:
+                            try:
+                                err = r.json().get("error", r.text)
+                            except Exception:
+                                err = r.text or "Sign-in failed"
+                            st.error(err)
+        st.markdown(
+            '<p style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:1.25rem;">New here?</p>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Create an account", use_container_width=True):
+            st.session_state.auth_panel = "register"
+            st.rerun()
 
-        if panel == "login":
-            st.markdown("#### Sign in")
-            st.caption("Your email is your account name.")
-            with st.form("signin_form"):
-                email = st.text_input("Email", autocomplete="email")
-                password = st.text_input("Password", type="password", autocomplete="current-password")
-                submitted = st.form_submit_button("Sign in", type="primary", use_container_width=True)
-                if submitted:
-                    if not email.strip() or not password:
-                        st.error("Enter email and password.")
-                    else:
-                        http = _http()
-                        try:
-                            r = http.post(
-                                f"{_api_base()}/api/auth/login",
-                                json={"email": email.strip().lower(), "password": password},
-                                timeout=60,
-                            )
-                        except requests.RequestException as exc:
-                            st.error(f"Cannot reach API: {exc!s}. Is the Flask server running?")
-                            submitted = False
-                        if submitted:
-                            if r.status_code == 200:
-                                st.success("Signed in.")
-                                st.rerun()
-                            else:
-                                try:
-                                    err = r.json().get("error", r.text)
-                                except Exception:
-                                    err = r.text or "Sign-in failed"
-                                st.error(err)
-            if st.button("Create an account", use_container_width=True):
-                st.session_state.auth_panel = "register"
-                st.rerun()
-        else:
-            st.markdown("#### Create account")
-            st.caption("Password must be at least 8 characters.")
-            with st.form("register_form"):
-                email = st.text_input("Email", key="reg_email", autocomplete="email")
-                password = st.text_input("Password", type="password", key="reg_pw", autocomplete="new-password")
-                submitted = st.form_submit_button("Create account", type="primary", use_container_width=True)
-                if submitted:
-                    if len(password) < 8:
-                        st.error("Password must be at least 8 characters.")
-                    else:
-                        http = _http()
-                        try:
-                            r = http.post(
-                                f"{_api_base()}/api/auth/register",
-                                json={"email": email.strip().lower(), "password": password},
-                                timeout=60,
-                            )
-                        except requests.RequestException as exc:
-                            st.error(f"Cannot reach API: {exc!s}")
-                            submitted = False
-                        if submitted:
-                            if r.status_code == 201:
-                                st.success("Account created. You are signed in.")
-                                st.session_state.auth_panel = "login"
-                                st.rerun()
-                            else:
-                                try:
-                                    err = r.json().get("error", r.text)
-                                except Exception:
-                                    err = r.text or "Registration failed"
-                                st.error(err)
-            if st.button("Back to sign in", use_container_width=True):
-                st.session_state.auth_panel = "login"
-                st.rerun()
+
+def _render_auth_register(ds: dict[str, Any]) -> None:
+    _inject_design_system_css(ds)
+    _, c, _ = st.columns([1, 2, 1])
+    with c:
+        if st.button("← Back home"):
+            st.session_state.auth_panel = "landing"
+            st.rerun()
+        st.markdown(
+            '<h1 class="page-title" style="font-size:1.5rem;font-weight:700;margin-top:1.25rem;color:#1a1a1a;">Create your account</h1>',
+            unsafe_allow_html=True,
+        )
+        with st.form("register_form"):
+            st.markdown('<span style="font-size:12px;color:#8a8a8a;">Email</span>', unsafe_allow_html=True)
+            email = st.text_input("Email", key="reg_email", label_visibility="collapsed", autocomplete="email")
+            st.markdown('<span style="font-size:12px;color:#8a8a8a;">Password</span>', unsafe_allow_html=True)
+            password = st.text_input("Password", type="password", key="reg_pw", label_visibility="collapsed", autocomplete="new-password")
+            st.caption("At least 8 characters.")
+            submitted = st.form_submit_button("Create account", type="primary", use_container_width=True)
+            if submitted:
+                if len(password) < 8:
+                    st.error("Password must be at least 8 characters.")
+                else:
+                    http = _http()
+                    try:
+                        r = http.post(
+                            f"{_api_base()}/api/auth/register",
+                            json={"email": email.strip().lower(), "password": password},
+                            timeout=60,
+                        )
+                    except requests.RequestException as exc:
+                        st.error(f"Cannot reach API: {exc!s}")
+                        r = None
+                    if r is not None:
+                        if r.status_code == 201:
+                            st.rerun()
+                        else:
+                            try:
+                                err = r.json().get("error", r.text)
+                            except Exception:
+                                err = r.text or "Registration failed"
+                            st.error(err)
+        st.markdown(
+            '<p style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:1.25rem;">Already have an account?</p>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Log in", use_container_width=True):
+            st.session_state.auth_panel = "login"
+            st.rerun()
+
+
+def _render_auth(ds: dict[str, Any]) -> None:
+    st.session_state.setdefault("auth_panel", "landing")
+    panel = st.session_state.auth_panel
+    if panel == "landing":
+        _render_auth_landing(ds)
+    elif panel == "login":
+        _render_auth_login(ds)
+    else:
+        _render_auth_register(ds)
 
 
 def _load_profile_into_editor(http: requests.Session) -> None:
@@ -618,6 +702,7 @@ def _main_logged_in(ds: dict[str, Any], user: dict[str, Any]) -> None:
             st.session_state.pop("pf_skills_df", None)
             st.session_state.pop("profile_uid_cached", None)
             st.session_state.pop("workflow_step", None)
+            st.session_state.auth_panel = "landing"
             st.rerun()
         st.divider()
         _workflow_render_sidebar_nav()

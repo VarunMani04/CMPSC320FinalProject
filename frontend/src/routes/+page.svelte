@@ -29,7 +29,7 @@
 			</div>
 			<h2 class="text-[16px] font-bold text-ink">Profile</h2>
 			<p class="mt-2 text-[12px] leading-relaxed text-ink-muted">
-				Your experience and credentials in one place 
+				Your experience and credentials in one place
 			</p>
 		</div>
 		<div class="card-interactive flex flex-col">
