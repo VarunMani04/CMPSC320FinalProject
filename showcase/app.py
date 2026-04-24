@@ -10,10 +10,25 @@ import json
 import os
 import re
 import uuid
+from pathlib import Path
 from typing import Any
 
 import pdfplumber
 import streamlit as st
+
+
+def _load_showcase_dotenv() -> None:
+    """Load persistent local config from showcase/.env (gitignored)."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    env_path = Path(__file__).resolve().parent / ".env"
+    if env_path.is_file():
+        load_dotenv(env_path)
+
+
+_load_showcase_dotenv()
 
 # Default model: free-tier friendly; override with GEMINI_MODEL env, Streamlit secret, or sidebar.
 def _default_gemini_model() -> str:

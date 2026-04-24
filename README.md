@@ -74,7 +74,7 @@ streamlit run app.py
 
 Or from the repo root: `streamlit run showcase/app.py` (then set working directory if imports fail; prefer `cd showcase` as above).
 
-Set `GEMINI_API_KEY` in the environment, or paste a key in the sidebar for a local session only.
+For a **persistent local key** (recommended for daily use), copy `showcase/.env.example` to **`showcase/.env`**, add `GEMINI_API_KEY=...`, and restart Streamlit. That file is **gitignored** so it stays on your machine only. You can still use `export GEMINI_API_KEY=...` or the sidebar if you prefer.
 
 **Streamlit Community Cloud (free hosting + QR)**
 
