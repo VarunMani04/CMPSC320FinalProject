@@ -18,7 +18,7 @@ See [OUTLINE.md](./OUTLINE.md) for how this maps to the course requirements.
 |------|---------|
 | `frontend/` | SvelteKit UI; `vite` dev proxies `/api` → Flask `:5000` |
 | `backend/` | Flask API, SQLAlchemy models, `app/services/llm.py` |
-| `showcase/` | Streamlit demo: PDF + spaCy + Gemini (`app.py`, `requirements.txt`) |
+| `showcase/` | Streamlit console: signs into Flask API, design-system styling (`app.py`, `design-system.json`) |
 | `OUTLINE.md` | Requirements-aligned outline |
 
 ## Prerequisites
@@ -58,9 +58,11 @@ Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session coo
 - **`OPENAI_MODEL`:** defaults to `gpt-4o-mini` (set in `.env` if you want another small/cheap model).
 - **Production / poster QR:** deploy frontend + backend, use HTTPS, set `SESSION_COOKIE_SECURE=true`, and add your public site origin to the `origins` list in `backend/app/__init__.py` for CORS + credentials.
 
-## Streamlit showcase (PDF + spaCy + Gemini, one URL for a QR code)
+## Streamlit console (`showcase/`)
 
-For a **single free public URL** (good for a poster QR) without deploying the SvelteKit + Flask pair, use the Streamlit app under `showcase/`. It uses **pdfplumber** for PDF job text, **spaCy** (`en_core_web_sm`) for linguistic hints, and **Google Gemini** (free tier via AI Studio) for structured parse / gap / roadmap. Heuristics still work if the key is missing.
+Alternate **PostingPal** UI that talks to the **same Flask API** (email + password sign-in, profile, job analyze, gap report, roadmap). Styling is driven by **`showcase/design-system.json`** (Sage Dashboard tokens from your design system). **spaCy** powers the **Language hints** tab on job text already stored on the server.
+
+**Prerequisites:** run the Flask backend (`python wsgi.py` from `backend/`, default `http://127.0.0.1:5000`).
 
 **Local run**
 
@@ -69,22 +71,11 @@ cd showcase
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env        # optional: set API_BASE_URL if Flask is not on 127.0.0.1:5000
 streamlit run app.py
 ```
 
-Or from the repo root: `streamlit run showcase/app.py` (then set working directory if imports fail; prefer `cd showcase` as above).
-
-For a **persistent local key** (recommended for daily use), copy `showcase/.env.example` to **`showcase/.env`**, add `GEMINI_API_KEY=...`, and restart Streamlit. That file is **gitignored** so it stays on your machine only. You can still use `export GEMINI_API_KEY=...` or the sidebar if you prefer.
-
-**Streamlit Community Cloud (free hosting + QR)**
-
-1. Push this repository to GitHub.
-2. In [Streamlit Community Cloud](https://streamlit.io/cloud), create a new app from the repo.
-3. Under **Advanced settings**: set **Main file path** to `showcase/app.py` and **Requirements file** to `showcase/requirements.txt`.
-4. Add a secret **`GEMINI_API_KEY`** (value from [Google AI Studio](https://aistudio.google.com/apikey)).
-5. Deploy, copy the `*.streamlit.app` URL, and encode it in your poster QR.
-
-If the default model errors in your region, set secret **`GEMINI_MODEL`** to `gemini-1.5-flash` or change the model field in the sidebar.
+**Streamlit Community Cloud:** the Streamlit host must reach your **public** API URL; set **`API_BASE_URL`** in app secrets to that origin. Cookie-based sessions are issued by Flask and held in the Streamlit server’s `requests` session (fine for demos; the primary product remains the SvelteKit app).
 
 ## Poster / hosting (full SvelteKit + Flask stack)
 
