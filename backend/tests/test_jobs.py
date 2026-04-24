@@ -1,8 +1,8 @@
-from tests.conftest import register_and_verify_otp
-
-
 def test_jobs_analyze_heuristic_without_openai(client):
-    register_and_verify_otp(client, "jobs@example.com", "password1")
+    client.post(
+        "/api/auth/register",
+        json={"email": "jobs@example.com", "password": "password1"},
+    )
     r = client.post(
         "/api/jobs/analyze",
         json={"postings": ["Python and SQL required for backend engineering role."]},

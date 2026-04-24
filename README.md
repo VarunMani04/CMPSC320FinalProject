@@ -55,7 +55,6 @@ Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session coo
 ## Environment
 
 - **Never commit** `.env` or API keys.
-- **Email OTP (mandatory 2FA):** After a correct password, the API emails a **6-digit code**; the session is created only after `POST /api/auth/verify-email-otp`. Configure **SMTP** in `backend/.env` (see `backend/.env.example`). For **local dev without mail**, set **`EMAIL_OTP_LOG_ONLY=1`** and read the code from the Flask terminal, or set **`EMAIL_OTP_BYPASS_CODE=123456`** (development only—never in production).
 - **`OPENAI_MODEL`:** defaults to `gpt-4o-mini` (set in `.env` if you want another small/cheap model).
 - **Production / poster QR:** deploy frontend + backend, use HTTPS, set `SESSION_COOKIE_SECURE=true`, and add your public site origin to the `origins` list in `backend/app/__init__.py` for CORS + credentials.
 
