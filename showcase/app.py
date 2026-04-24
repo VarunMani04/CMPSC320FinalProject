@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -138,8 +139,58 @@ def _inject_design_system_css(ds: dict[str, Any]) -> None:
     )
 
 
+def _normalize_api_base(raw: str) -> str:
+    """Use Flask origin; Svelte/Vite dev ports cannot serve POST /api (often HTTP 403)."""
+    base = (raw or "http://127.0.0.1:5000").rstrip("/")
+    try:
+        port = urlparse(base).port
+        if port in (5173, 4173):
+            return "http://127.0.0.1:5000"
+    except Exception:
+        pass
+    return base
+
+
 def _api_base() -> str:
-    return (os.environ.get("API_BASE_URL") or "http://127.0.0.1:5000").rstrip("/")
+    return _normalize_api_base(os.environ.get("API_BASE_URL") or "http://127.0.0.1:5000")
+
+
+def _maybe_warn_wrong_api_base() -> None:
+    raw = (os.environ.get("API_BASE_URL") or "").strip()
+    if not raw:
+        return
+    fixed = _normalize_api_base(raw)
+    if fixed == raw.rstrip("/"):
+        return
+    if st.session_state.get("_showcase_api_base_warned"):
+        return
+    st.session_state._showcase_api_base_warned = True
+    st.warning(
+        f"API_BASE_URL pointed at the Svelte/Vite dev server (`{raw}`). "
+        "Streamlit must call **Flask** directly. Using `http://127.0.0.1:5000`. "
+        "Set `API_BASE_URL=http://127.0.0.1:5000` in `showcase/.env`."
+    )
+
+
+def _probe_flask_backend(http: requests.Session) -> None:
+    if st.session_state.get("_showcase_health_ok") is True:
+        return
+    base = _api_base()
+    try:
+        r = http.get(f"{base}/api/health", timeout=5)
+    except requests.RequestException as exc:
+        st.error(
+            f"Cannot reach Flask at `{base}` ({exc!s}). "
+            "From `backend/`, run `python wsgi.py` (or `gunicorn`) on port 5000, then refresh."
+        )
+        return
+    if r.status_code != 200:
+        st.error(
+            f"Flask at `{base}` returned HTTP {r.status_code} for GET /api/health. "
+            "Fix `API_BASE_URL` in `showcase/.env` so it is your API origin only (not a static site)."
+        )
+        return
+    st.session_state._showcase_health_ok = True
 
 
 def _http_error_message(r: requests.Response, fallback: str) -> str:
@@ -754,6 +805,8 @@ def main() -> None:
     st.set_page_config(page_title="PostingPal", page_icon="🌿", layout="wide", initial_sidebar_state="expanded")
 
     http = _http()
+    _maybe_warn_wrong_api_base()
+    _probe_flask_backend(http)
     user = _current_user(http)
     if not user:
         _render_auth(ds)

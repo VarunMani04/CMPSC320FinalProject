@@ -52,10 +52,17 @@ npm run dev                 # http://127.0.0.1:5173 — /api proxied to Flask
 
 Use the same host as in backend CORS (`localhost` vs `127.0.0.1`) so session cookies match; the README defaults assume **127.0.0.1**.
 
-## Environment
+## Environment (what goes where)
 
-- **Never commit** `.env` or API keys.
-- **`GEMINI_MODEL`:** defaults to `gemini-2.0-flash` (override in `.env` if you prefer another Gemini id).
+| File | Purpose |
+|------|---------|
+| **`backend/.env`** | **`SECRET_KEY`** (required for real sessions). Optional: **`GEMINI_API_KEY`** or **`GOOGLE_API_KEY`**, **`GEMINI_MODEL`**, **`SESSION_COOKIE_SECURE`**, **`DATABASE_URL`**. |
+| **`frontend/.env`** | Usually **omit** — `/api` proxies to `http://127.0.0.1:5000`. Optional: **`API_ORIGIN`** if Flask is elsewhere (see `frontend/.env.example`). |
+| **`showcase/.env`** | **`API_BASE_URL`** = Flask only (default `http://127.0.0.1:5000`). **Do not** use the Svelte URL (`:5173` / `:4173`); Streamlit talks to Flask, not Vite. **Do not** put Gemini keys here — those belong in **`backend/.env`**. |
+
+Copy each folder’s **`.env.example`** → **`.env`** and fill in values. **Never commit** `.env` or API keys.
+
+- **`GEMINI_MODEL`:** defaults to `gemini-2.0-flash` (set in `backend/.env` if you want another model id).
 - **Production / poster QR:** deploy frontend + backend, use HTTPS, set `SESSION_COOKIE_SECURE=true`, and add your public site origin to the `origins` list in `backend/app/__init__.py` for CORS + credentials.
 
 ## Streamlit console (`showcase/`)
